@@ -74,7 +74,15 @@ def analyze_ticker(ticker: str, verbose: bool = False) -> list[dict]:
 
     return ideas
 
-
+def _dedupe_best_per_ticker(df: pd.DataFrame) -> pd.DataFrame:
+    """Keeps only the highest-scoring idea per ticker within a strategy, so
+    one name with several attractive strikes/expiries doesn't crowd out
+    diversification across the report."""
+    if df.empty:
+        return df
+    best_idx = df.groupby("ticker")["composite_score"].idxmax()
+    return df.loc[best_idx]
+  
 def run_pipeline(tickers=None, verbose=True) -> dict:
     tickers = tickers or all_tickers()
     all_ideas = []
@@ -95,6 +103,7 @@ def run_pipeline(tickers=None, verbose=True) -> dict:
         sub = df[df["strategy"] == strategy].copy()
         min_score = MIN_SCORE_TO_REPORT[strategy]
         sub = sub[sub["composite_score"] >= min_score]
+        sub = _dedupe_best_per_ticker(sub)
         sub = sub.sort_values("composite_score", ascending=False)
         sub = sub.head(MAX_IDEAS_PER_STRATEGY * 3)  # keep extra headroom; dashboard can re-cap
         results[strategy] = sub
