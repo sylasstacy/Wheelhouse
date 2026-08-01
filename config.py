@@ -11,20 +11,31 @@ Nothing else in the codebase should need to change to adjust your "style."
 # (e.g. tighter IV/liquidity thresholds on leveraged ETFs).
 
 UNIVERSE = {
-    "tech_large_cap": [
-        "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "AVGO",
-        "AMD", "CRM", "ADBE", "NFLX", "ORCL", "NOW", "PANW",
+    "mega_cap_tech": [
+        "AAPL", "MSFT", "GOOGL", "AMZN", "META", "NVDA", "AVGO",
+        "TSLA", "ORCL", "CRM", "ADBE", "NFLX", "SPCX", "MAGS",
     ],
-    "mid_cap_growth": [
-        "SNOW", "DDOG", "NET", "CRWD", "MDB", "ZS", "SHOP",
+    "semiconductors": [
+        "AMD", "INTC", "QCOM", "TXN", "MU", "AMAT", "LRCX", "ARM", "TSM", "MRVL", "DRAM", "CBRS", "AMKR", 
+        "AKAM", "NVTS", "BOT", "AMBA", "SYNA", "BE", "ENPH", "OKLO", "CRWV", "KEEL", "NBIS", "VIAV", "CIFR",
+        "CLSK", "HUT", "IREN", "MARA", "RIOT", "USAR",
+    ],
+    "software_cloud": [
+        "NOW", "PANW", "SNOW", "DDOG", "NET", "CRWD", "MDB", "ZS", "TEAM", "WDAY", "ZETA", "TTD", "RNG", "RDDT"
+        "FIVN", "FIG", "PLTR",
+    ],
+    "consumer_internet_fintech": [
+        "SHOP", "UBER", "PYPL", "XYZ", "COIN", "DASH", "RIVN", "HOOD", "SOFI", "COIN", "AFRM", "LMND", "BMNR", 
+        "MSTR", "IBIT", "RKLB", "ASTS", "HIMS", "GRAB", "SE",
     ],
     "core_etf": [
-        "SPY", "QQQ", "IWM", "DIA", "XLK", "XLF", "XLE", "SMH",
+        "SPY", "QQQ", "IWM", "DIA", "XLK", "XLF", "XLE", "XLV", "XLI", "SMH",
     ],
     # Sleeve for expressing leveraged views on sharp drawdowns / rebounds.
     # Screener applies stricter liquidity & IV-crush caution here.
     "leveraged_etf": [
-        "TQQQ", "SQQQ", "SOXL", "SOXS", "SPXL", "SPXS", "UPRO", "SPXU",
+        "TQQQ", "SQQQ", "SOXL", "SOXS", "SPXL", "SPXS", "UPRO", "SPXU", "AAPU", "AMZU", "GGLL", "METU", "TSLL", 
+        "PTIR", "ROBN", "HIMZ", "NEBX", "RDTL", "NVDL", "CONL", "ETHU", "MSTX", "BMNU", 
     ],
 }
 
