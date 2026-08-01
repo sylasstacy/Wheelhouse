@@ -36,10 +36,10 @@ STRATEGY_LABELS = {
 
 def _score_color(score: float) -> str:
     if score >= 80:
-        return "#1a7f37"
+        return "#15803d"
     if score >= 65:
-        return "#9a6700"
-    return "#666"
+        return "#b45309"
+    return "#6b7280"
 
 
 def _select_daily_ideas(results: dict):
@@ -152,6 +152,15 @@ def generate_report():
         core_html = "".join(_idea_card(row.to_dict()) for _, row in core.iterrows())
         core_count = len(core)
 
+    total_shown = core_count + (0 if bonus.empty else len(bonus))
+    avg_score = None
+    if not core.empty or not bonus.empty:
+        all_scores = pd.concat([
+            core["composite_score"] if not core.empty else pd.Series(dtype=float),
+            bonus["composite_score"] if not bonus.empty else pd.Series(dtype=float),
+        ])
+        avg_score = round(all_scores.mean(), 1) if not all_scores.empty else None
+
     if bonus.empty:
         bonus_section = ""
     else:
@@ -167,6 +176,17 @@ def generate_report():
         </section>
         """
 
+    stats_html = ""
+    if avg_score is not None:
+        stats_html = f"""
+        <div class="stats">
+          <div class="stat"><div class="stat-num">{total_shown}</div><div class="stat-label">Ideas Today</div></div>
+          <div class="stat"><div class="stat-num">{avg_score}</div><div class="stat-label">Avg Score</div></div>
+          <div class="stat"><div class="stat-num">{core_count}</div><div class="stat-label">Core CSPs</div></div>
+          <div class="stat"><div class="stat-num">{0 if bonus.empty else len(bonus)}</div><div class="stat-label">Bonus Ideas</div></div>
+        </div>
+        """
+
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -174,47 +194,79 @@ def generate_report():
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wheelhouse — Daily Report</title>
 <style>
-  :root {{ color-scheme: light; }}
+  :root {{
+    color-scheme: light;
+    --bg: #f4f5f7;
+    --ink: #1a1d23;
+    --muted: #6b7280;
+    --card: #ffffff;
+    --border: #e8e9ec;
+    --accent: #4f46e5;
+    --accent-soft: #eef0ff;
+  }}
   * {{ box-sizing: border-box; }}
   body {{
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: #f6f7f9; color: #1a1a1a; margin: 0; padding: 24px;
+    background: var(--bg); color: var(--ink); margin: 0; padding: 32px 20px;
   }}
-  header {{ max-width: 1100px; margin: 0 auto 24px; }}
-  h1 {{ font-size: 24px; margin: 0 0 4px; }}
-  .timestamp {{ color: #666; font-size: 14px; }}
+  header {{
+    max-width: 1100px; margin: 0 auto 20px; display: flex; justify-content: space-between;
+    align-items: flex-end; flex-wrap: wrap; gap: 16px;
+  }}
+  h1 {{ font-size: 26px; margin: 0 0 4px; letter-spacing: -0.02em; }}
+  .timestamp {{ color: var(--muted); font-size: 13px; }}
+  .stats {{ display: flex; gap: 24px; }}
+  .stat {{ text-align: center; }}
+  .stat-num {{ font-size: 22px; font-weight: 700; color: var(--accent); }}
+  .stat-label {{ font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }}
   .disclaimer {{
-    max-width: 1100px; margin: 0 auto 24px; padding: 12px 16px;
-    background: #fff8e1; border: 1px solid #f0d97a; border-radius: 8px;
-    font-size: 13px; color: #6b5900;
+    max-width: 1100px; margin: 0 auto 28px; padding: 12px 16px;
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px;
+    font-size: 12.5px; color: #92610a; line-height: 1.5;
   }}
   main {{ max-width: 1100px; margin: 0 auto; }}
-  section {{ margin-bottom: 32px; }}
-  h2 {{ font-size: 18px; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }}
-  .count {{ color: #999; font-weight: normal; font-size: 14px; }}
-  .section-note {{ color: #777; font-size: 13px; margin: 6px 0 0; }}
-  .empty {{ color: #999; font-style: italic; }}
-  .cards {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; margin-top: 16px; }}
-  .card {{ background: white; border-radius: 10px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }}
-  .card-head {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }}
-  .headline {{ font-weight: 600; font-size: 15px; }}
-  .badge {{ background: #eef; color: #445; border-radius: 6px; padding: 2px 6px; font-size: 11px; margin-right: 6px; }}
-  .score {{ color: white; font-weight: 700; font-size: 14px; padding: 4px 10px; border-radius: 20px; }}
-  .thesis {{
-    font-size: 13px; line-height: 1.5; color: #333; background: #f9fafb;
-    border-left: 3px solid #ccc; padding: 8px 12px; margin-bottom: 12px; border-radius: 4px;
+  section {{ margin-bottom: 36px; }}
+  h2 {{ font-size: 16px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 2px; }}
+  .count {{ color: var(--muted); font-weight: 500; font-size: 13px; }}
+  .section-note {{ color: var(--muted); font-size: 12.5px; margin: 4px 0 0; }}
+  .empty {{ color: var(--muted); font-style: italic; padding: 20px 0; }}
+  .cards {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; margin-top: 14px; }}
+  .card {{
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px; transition: box-shadow 0.15s ease;
   }}
-  .row {{ display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; border-bottom: 1px dashed #eee; }}
-  .label {{ color: #777; }}
-  .val {{ font-weight: 500; }}
-  .chips {{ margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }}
-  .chip {{ background: #f0f1f3; border-radius: 6px; padding: 3px 8px; font-size: 11px; color: #555; }}
+  .card:hover {{ box-shadow: 0 4px 16px rgba(0,0,0,0.06); }}
+  .card-head {{ display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 10px; }}
+  .headline {{ font-weight: 700; font-size: 15px; line-height: 1.3; }}
+  .badge {{
+    display: inline-block; background: var(--accent-soft); color: var(--accent);
+    border-radius: 6px; padding: 2px 7px; font-size: 10.5px; font-weight: 600;
+    margin-bottom: 4px; letter-spacing: 0.02em;
+  }}
+  .score {{
+    color: white; font-weight: 700; font-size: 14px; padding: 5px 12px;
+    border-radius: 20px; flex-shrink: 0;
+  }}
+  .thesis {{
+    font-size: 13px; line-height: 1.55; color: #374151; background: #f9fafb;
+    border-left: 3px solid var(--accent); padding: 10px 13px; margin-bottom: 14px;
+    border-radius: 0 8px 8px 0;
+  }}
+  .row {{ display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f3f4f6; }}
+  .row:last-child {{ border-bottom: none; }}
+  .label {{ color: var(--muted); }}
+  .val {{ font-weight: 600; }}
+  .chips {{ margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }}
+  .chip {{ background: #f3f4f6; border-radius: 6px; padding: 3px 9px; font-size: 10.5px; color: #4b5563; font-weight: 500; }}
 </style>
 </head>
 <body>
 <header>
-  <h1>🎡 Wheelhouse — Daily Report</h1>
-  <div class="timestamp">Generated {now}</div>
+  <div>
+    <h1>🎡 Wheelhouse</h1>
+    <div class="timestamp">Generated {now}</div>
+  </div>
+  {stats_html}
 </header>
 <div class="disclaimer">
   Informational only, not investment advice. Greeks are Black-Scholes estimates;
