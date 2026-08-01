@@ -40,7 +40,8 @@ def support_level(hist: pd.DataFrame, lookback: int = 60) -> float:
 def trend_score(hist: pd.DataFrame) -> dict:
     """
     Returns a 0-100 trend score plus the underlying diagnostics.
-    Blends: price vs moving averages, MA slope/stacking, RSI regime.
+    Blends: price vs moving averages, MA slope/stacking, RSI regime,
+    and distance above support (cushion).
     """
     close = hist["close"]
     last_close = float(close.iloc[-1])
@@ -74,6 +75,22 @@ def trend_score(hist: pd.DataFrame) -> dict:
 
     score = float(np.clip(score, 0, 100))
     dist_to_support_pct = (last_close - support_level(hist)) / last_close * 100
+
+    # Support cushion: reward a healthy buffer above support (room before a normal
+    # pullback threatens a short strike), penalize sitting right at/below support
+    # (fragile) or being way overextended above it (chasing, due for reversion).
+    if dist_to_support_pct < 0:
+        score -= 15       # already broken below recent support -- red flag
+    elif dist_to_support_pct < 5:
+        score -= 5        # very tight cushion, limited margin for error
+    elif dist_to_support_pct <= 20:
+        score += 8        # sweet spot: comfortable room without being extended
+    elif dist_to_support_pct <= 40:
+        score += 3        # still fine, more room but less "coiled"
+    else:
+        score -= 5        # meaningfully extended above support, chasing risk
+
+    score = float(np.clip(score, 0, 100))
 
     return {
         "trend_score": round(score, 1),
