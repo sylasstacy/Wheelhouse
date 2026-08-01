@@ -60,7 +60,7 @@ SCREEN = {
     "leveraged_etf_max_dte": 21,      # keep leveraged plays short-dated (decay/path risk)
 
     # Cash-secured put rules
-    "csp_target_delta_range": (0.15, 0.30),   # abs(delta) window
+    "csp_target_delta_range": (0.10, 0.20),   # abs(delta) window -- tightened for lower assignment risk
     "csp_min_dte": 21,
     "csp_max_dte": 45,
     "csp_min_annualized_return_pct": 12.0,    # premium / cash secured, annualized
