@@ -100,17 +100,27 @@ def _clean_chain(df: pd.DataFrame) -> pd.DataFrame:
 # Earnings / catalyst calendar
 # ---------------------------------------------------------------------------
 
-def get_next_earnings_date(ticker: str) -> dt.date | None:
+def get_next_earnings_date(ticker: str):
+    """
+    Returns (date_or_None, status) where status is one of:
+      'confirmed'   - a specific upcoming earnings date was found
+      'unavailable' - the fetch failed, returned nothing, or looked incomplete;
+                       genuinely unknown, NOT the same as "confirmed no earnings"
+
+    This distinction matters: silently treating a failed fetch as "no earnings"
+    would hide real event risk. Downstream code should treat 'unavailable' as
+    a reason for mild caution, not a clean bill of health.
+    """
     if yf is None:
-        return None
+        return None, "unavailable"
     try:
         t = yf.Ticker(ticker)
         cal = t.get_earnings_dates(limit=4)
         if cal is None or cal.empty:
-            return None
+            return None, "unavailable"
         future = cal[cal.index >= pd.Timestamp.now(tz=cal.index.tz)]
         if future.empty:
-            return None
-        return future.index[0].date()
+            return None, "unavailable"
+        return future.index[0].date(), "confirmed"
     except Exception:
-        return None
+        return None, "unavailable"

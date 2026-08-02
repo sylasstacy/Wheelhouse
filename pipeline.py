@@ -44,7 +44,7 @@ def analyze_ticker(ticker: str, verbose: bool = False) -> list[dict]:
                 print(f"  {ticker}: no options chain available")
             return []
 
-        next_earnings = data_fetch.get_next_earnings_date(ticker)
+        next_earnings, earnings_status = data_fetch.get_next_earnings_date(ticker)
 
         # IV metrics off the nearest ~30-45 DTE expiration as a representative read
         rep_expiry = snapshot.expirations[min(2, len(snapshot.expirations) - 1)]
@@ -52,10 +52,10 @@ def analyze_ticker(ticker: str, verbose: bool = False) -> list[dict]:
         iv_rank_data = iv_metrics.iv_rank_proxy(hist, atm_iv)
 
         raw_ideas = []
-        raw_ideas += find_csp_candidates(ticker, snapshot, hist, next_earnings)
-        raw_ideas += find_spread_candidates(ticker, snapshot, hist, next_earnings,
+        raw_ideas += find_csp_candidates(ticker, snapshot, hist, next_earnings, earnings_status)
+        raw_ideas += find_spread_candidates(ticker, snapshot, hist, next_earnings, earnings_status,
                                              trend_diag["trend_score"])
-        raw_ideas += find_leaps_candidates(ticker, snapshot, hist, next_earnings, trend_diag)
+        raw_ideas += find_leaps_candidates(ticker, snapshot, hist, next_earnings, earnings_status, trend_diag)
 
         for idea in raw_ideas:
             scored = score_idea(idea, trend_diag, iv_rank_data)
@@ -74,6 +74,7 @@ def analyze_ticker(ticker: str, verbose: bool = False) -> list[dict]:
 
     return ideas
 
+
 def _dedupe_best_per_ticker(df: pd.DataFrame) -> pd.DataFrame:
     """Keeps only the highest-scoring idea per ticker within a strategy, so
     one name with several attractive strikes/expiries doesn't crowd out
@@ -82,7 +83,8 @@ def _dedupe_best_per_ticker(df: pd.DataFrame) -> pd.DataFrame:
         return df
     best_idx = df.groupby("ticker")["composite_score"].idxmax()
     return df.loc[best_idx]
-  
+
+
 def run_pipeline(tickers=None, verbose=True) -> dict:
     tickers = tickers or all_tickers()
     all_ideas = []

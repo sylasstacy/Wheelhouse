@@ -74,6 +74,14 @@ def _headline(idea: dict) -> str:
     return f"Buy {idea['ticker']} ${idea['strike']} Call (LEAPS)"
 
 
+def _earnings_display(idea: dict) -> str:
+    if idea.get("next_earnings"):
+        return idea["next_earnings"]
+    if idea.get("earnings_status") == "unavailable":
+        return "unconfirmed (data unavailable — check manually)"
+    return "none scheduled"
+
+
 def _detail_rows(idea: dict):
     strategy = idea["strategy"]
     if strategy == "csp":
@@ -86,7 +94,7 @@ def _detail_rows(idea: dict):
             ("Breakeven", f"${idea['breakeven']:.2f}"),
             ("IV", f"{idea['iv']}%" if idea['iv'] else "n/a"),
             ("Open Interest", idea["open_interest"]),
-            ("Next Earnings", idea["next_earnings"] or "none scheduled"),
+            ("Next Earnings", _earnings_display(idea)),
         ]
     if strategy == "spread":
         return [
@@ -97,7 +105,7 @@ def _detail_rows(idea: dict):
             ("Max Loss", f"${idea['max_loss']:.2f}"),
             ("Max Gain", f"${idea['max_gain']:.2f}"),
             ("Credit/Width", f"{idea['credit_to_width_pct']:.1f}%"),
-            ("Next Earnings", idea["next_earnings"] or "none scheduled"),
+            ("Next Earnings", _earnings_display(idea)),
         ]
     return [
         ("Expiry", f"{idea['expiry']} ({idea['dte']}d)"),
@@ -107,7 +115,7 @@ def _detail_rows(idea: dict):
         ("Breakeven", f"${idea['breakeven']:.2f}"),
         ("Leverage Ratio", idea["leverage_ratio"]),
         ("Trend Score", idea["trend_score"]),
-        ("Next Earnings", idea["next_earnings"] or "none scheduled"),
+        ("Next Earnings", _earnings_display(idea)),
     ]
 
 

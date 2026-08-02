@@ -79,7 +79,11 @@ def score_risk(idea: dict, strategy: str) -> float:
 def score_catalyst(idea: dict, days_to_expiry_field="dte") -> float:
     """Penalize proximity to earnings/binary catalysts inside the trade window."""
     if not idea.get("next_earnings"):
-        return 80.0  # no known catalyst = calmer, safer default
+        # Distinguish "confirmed nothing coming up" from "couldn't confirm" --
+        # the latter deserves mild caution, not full confidence.
+        if idea.get("earnings_status") == "unavailable":
+            return 60.0
+        return 80.0
     try:
         earnings_date = dt.datetime.strptime(idea["next_earnings"], "%Y-%m-%d").date()
     except Exception:

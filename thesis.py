@@ -72,7 +72,7 @@ def _build_prompt(idea: dict) -> str:
         f"risk {s['risk']}, catalyst {s['catalyst']})\n"
         f"Trend diagnostics: {trend}\n"
         f"IV diagnostics: {iv}\n"
-        f"Next earnings: {idea.get('next_earnings') or 'none scheduled'}\n"
+        f"Next earnings: {idea.get('next_earnings') or ('unconfirmed/unavailable, not a confirmed absence' if idea.get('earnings_status') == 'unavailable' else 'none scheduled')}\n"
     )
 
     if strategy == "csp":
