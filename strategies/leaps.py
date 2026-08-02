@@ -10,7 +10,7 @@ from config import SCREEN, bucket_of
 from greeks import add_delta_column
 
 
-def find_leaps_candidates(ticker, snapshot, hist, next_earnings, trend_diag,
+def find_leaps_candidates(ticker, snapshot, hist, next_earnings, earnings_status, trend_diag,
                            screen=SCREEN):
     ideas = []
     bucket = bucket_of(ticker)
@@ -69,6 +69,7 @@ def find_leaps_candidates(ticker, snapshot, hist, next_earnings, trend_diag,
                 "underlying_price": round(snapshot.underlying_price, 2),
                 "trend_score": trend_diag["trend_score"],
                 "next_earnings": str(next_earnings) if next_earnings else None,
+                "earnings_status": earnings_status,
             })
 
     return ideas

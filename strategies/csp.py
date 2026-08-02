@@ -13,7 +13,7 @@ from config import SCREEN, bucket_of
 from greeks import add_delta_column, years_to_expiry
 
 
-def find_csp_candidates(ticker, snapshot, hist, next_earnings, screen=SCREEN):
+def find_csp_candidates(ticker, snapshot, hist, next_earnings, earnings_status, screen=SCREEN):
     ideas = []
     bucket = bucket_of(ticker)
     min_dte, max_dte = screen["csp_min_dte"], screen["csp_max_dte"]
@@ -73,6 +73,7 @@ def find_csp_candidates(ticker, snapshot, hist, next_earnings, screen=SCREEN):
                 "bid_ask_spread_pct": round(row["spread_pct"] * 100, 1),
                 "underlying_price": round(snapshot.underlying_price, 2),
                 "next_earnings": str(next_earnings) if next_earnings else None,
+                "earnings_status": earnings_status,
             })
 
     return ideas

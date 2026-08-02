@@ -25,7 +25,7 @@ def _build_spread(short_row, long_row, option_type, contract_mult=100):
     return credit, width, max_loss, max_gain, credit_to_width_pct
 
 
-def find_spread_candidates(ticker, snapshot, hist, next_earnings, trend_score,
+def find_spread_candidates(ticker, snapshot, hist, next_earnings, earnings_status, trend_score,
                             screen=SCREEN):
     """
     trend_score: 0-100 technical score, used to decide put-credit (bullish/
@@ -98,6 +98,7 @@ def find_spread_candidates(ticker, snapshot, hist, next_earnings, trend_score,
                 "iv": round(short_row["iv"] * 100, 1) if pd.notna(short_row["iv"]) else None,
                 "underlying_price": round(snapshot.underlying_price, 2),
                 "next_earnings": str(next_earnings) if next_earnings else None,
+                "earnings_status": earnings_status,
             })
 
     return ideas
