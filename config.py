@@ -53,6 +53,21 @@ def bucket_of(ticker: str) -> str:
             return bucket
     return "unknown"
 
+# ---------------------------------------------------------------------------
+# CSP PREMIUM GRADING
+# ---------------------------------------------------------------------------
+# The premium sub-score blends two smooth (logistic/S-curve) grades:
+#   - raw return on capital (premium / cash secured, NOT annualized) --
+#     stops short-dated trades with tiny real payouts from gaming the
+#     annualized number
+#   - annualized return -- your efficiency/aspirational target
+# Each curve is defined by its TARGET: hitting the target scores ~90,
+# half the target scores 50, and the curve smoothly (never abruptly)
+# approaches 100 well beyond target. No hard caps or breakpoints.
+
+CSP_PREMIUM_RAW_RETURN_TARGET_PCT = 2.0     # "usually looking for" floor
+CSP_PREMIUM_ANNUALIZED_TARGET_PCT = 40.0    # "ideally" stretch goal
+CSP_PREMIUM_RAW_RETURN_WEIGHT = 0.5         # vs. (1 - this) for annualized
 
 # ---------------------------------------------------------------------------
 # SCREENING RULES
