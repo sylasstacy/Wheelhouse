@@ -11,7 +11,12 @@ config.py rather than fight a black box.
 from __future__ import annotations
 import datetime as dt
 import numpy as np
-from config import SCORING_WEIGHTS
+from config import (
+    SCORING_WEIGHTS,
+    CSP_PREMIUM_RAW_RETURN_TARGET_PCT,
+    CSP_PREMIUM_ANNUALIZED_TARGET_PCT,
+    CSP_PREMIUM_RAW_RETURN_WEIGHT,
+)
 
 
 def _clip100(x):
@@ -72,10 +77,30 @@ def score_iv(iv_metrics: dict, strategy: str) -> float:
     return _clip100(rank)
 
 
+def _logistic_target_curve(value: float, target: float) -> float:
+    """
+    Smooth S-curve with no hard breakpoints: scores ~10 at 0, 50 at half the
+    target, ~90 at the target itself, and asymptotically approaches (but
+    never quite hits) 100 well beyond it. Every fractional change in `value`
+    moves the score -- no flat caps, no sudden cliffs.
+    """
+    if target <= 0:
+        return 50.0
+    midpoint = target / 2.0
+    k = (2 * np.log(9)) / target   # calibrated so value==target -> score ~90
+    score = 100.0 / (1.0 + np.exp(-k * (value - midpoint)))
+    return _clip100(score)
+
+
 def score_premium_csp(idea: dict) -> float:
-    # map annualized return of 8% -> 30, 15% -> 65, 25%+ -> 100 (rough linear-ish curve)
-    ar = idea["annualized_return_pct"]
-    return _clip100((ar - 5) / (30 - 5) * 100)
+    raw_return_pct = (idea["premium_per_contract"] / idea["cash_secured"]) * 100
+    annualized_pct = idea["annualized_return_pct"]
+
+    raw_score = _logistic_target_curve(raw_return_pct, CSP_PREMIUM_RAW_RETURN_TARGET_PCT)
+    ann_score = _logistic_target_curve(annualized_pct, CSP_PREMIUM_ANNUALIZED_TARGET_PCT)
+
+    w = CSP_PREMIUM_RAW_RETURN_WEIGHT
+    return _clip100(w * raw_score + (1 - w) * ann_score)
 
 
 def score_premium_spread(idea: dict) -> float:
