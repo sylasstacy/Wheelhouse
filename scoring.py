@@ -23,6 +23,41 @@ def score_technicals(trend_diag: dict, strategy: str) -> float:
     if strategy == "spread" and base < 50:
         # bearish spread: invert so a strong downtrend also scores well
         base = 100 - base
+
+    # RSI regime -- interpretation depends on strategy. For CSPs (premium
+    # selling), oversold is an opportunity: richer premium from fear, and
+    # mean-reversion odds favor the seller -- provided the rest of the score
+    # (MA position, support cushion) already confirms this isn't a falling
+    # knife, which it independently does. For LEAPs/spreads, oversold stays
+    # a caution since you're taking on long-dated directional exposure.
+    rsi = trend_diag.get("rsi")
+    if rsi is not None:
+        if strategy == "csp":
+            if rsi < 30:
+                base += 8       # oversold = opportunity for premium selling
+            elif 45 <= rsi <= 65:
+                base += 8       # healthy, steady momentum
+            elif rsi > 75:
+                base -= 6       # overbought / chasing
+        else:
+            if 45 <= rsi <= 65:
+                base += 8
+            elif rsi > 75:
+                base -= 6
+            elif rsi < 30:
+                base -= 6       # oversold still a caution for LEAPs/spreads
+
+    # Bollinger %B -- CSP-only for now, lightly weighted since it's
+    # correlated with RSI (both measure "how stretched is this move").
+    # Keeping the magnitude modest avoids double-counting the same read.
+    if strategy == "csp":
+        percent_b = trend_diag.get("percent_b")
+        if percent_b is not None:
+            if percent_b < 0:
+                base += 5       # trading below the lower band -- opportunity
+            elif percent_b > 1:
+                base -= 4       # trading above the upper band -- mild caution
+
     return _clip100(base)
 
 

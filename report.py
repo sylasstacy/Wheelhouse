@@ -82,8 +82,31 @@ def _earnings_display(idea: dict) -> str:
     return "none scheduled"
 
 
+def _technical_rows(idea: dict) -> list:
+    """RSI, support cushion, and Bollinger diagnostics -- shown on every card
+    for transparency. Band width is informational only (not currently scored)."""
+    t = idea.get("trend_diagnostics", {})
+    rows = []
+    if t.get("rsi") is not None:
+        rows.append(("RSI (14d)", t["rsi"]))
+    if t.get("dist_to_support_pct") is not None:
+        rows.append(("Above Support", f"{t['dist_to_support_pct']:.1f}%"))
+    if t.get("percent_b") is not None:
+        rows.append(("Bollinger %B", t["percent_b"]))
+    if t.get("band_width_pct") is not None:
+        rows.append(("Bollinger Band Width", f"{t['band_width_pct']:.1f}%"))
+    if t.get("pct_from_swing_high_avwap") is not None:
+        rows.append((f"vs Swing-High AVWAP ({t['swing_high_date']})",
+                     f"{t['pct_from_swing_high_avwap']:+.1f}%"))
+    if t.get("pct_from_swing_low_avwap") is not None:
+        rows.append((f"vs Swing-Low AVWAP ({t['swing_low_date']})",
+                     f"{t['pct_from_swing_low_avwap']:+.1f}%"))
+    return rows
+
+
 def _detail_rows(idea: dict):
     strategy = idea["strategy"]
+    tech_rows = _technical_rows(idea)
     if strategy == "csp":
         return [
             ("Expiry", f"{idea['expiry']} ({idea['dte']}d)"),
@@ -94,6 +117,7 @@ def _detail_rows(idea: dict):
             ("Breakeven", f"${idea['breakeven']:.2f}"),
             ("IV", f"{idea['iv']}%" if idea['iv'] else "n/a"),
             ("Open Interest", idea["open_interest"]),
+            *tech_rows,
             ("Next Earnings", _earnings_display(idea)),
         ]
     if strategy == "spread":
@@ -105,6 +129,7 @@ def _detail_rows(idea: dict):
             ("Max Loss", f"${idea['max_loss']:.2f}"),
             ("Max Gain", f"${idea['max_gain']:.2f}"),
             ("Credit/Width", f"{idea['credit_to_width_pct']:.1f}%"),
+            *tech_rows,
             ("Next Earnings", _earnings_display(idea)),
         ]
     return [
@@ -115,6 +140,7 @@ def _detail_rows(idea: dict):
         ("Breakeven", f"${idea['breakeven']:.2f}"),
         ("Leverage Ratio", idea["leverage_ratio"]),
         ("Trend Score", idea["trend_score"]),
+        *tech_rows,
         ("Next Earnings", _earnings_display(idea)),
     ]
 
