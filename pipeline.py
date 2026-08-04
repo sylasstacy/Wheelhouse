@@ -21,6 +21,7 @@ import data_fetch
 import technicals
 import iv_metrics
 from strategies.csp import find_csp_candidates
+from strategies.leveraged_csp import find_leveraged_csp_candidates
 from strategies.spreads import find_spread_candidates
 from strategies.leaps import find_leaps_candidates
 from scoring import score_idea
@@ -53,14 +54,15 @@ def analyze_ticker(ticker: str, verbose: bool = False) -> list[dict]:
 
         raw_ideas = []
         raw_ideas += find_csp_candidates(ticker, snapshot, hist, next_earnings, earnings_status)
+        raw_ideas += find_leveraged_csp_candidates(ticker, snapshot, hist, next_earnings, earnings_status)
         raw_ideas += find_spread_candidates(ticker, snapshot, hist, next_earnings, earnings_status,
                                              trend_diag["trend_score"])
         raw_ideas += find_leaps_candidates(ticker, snapshot, hist, next_earnings, earnings_status, trend_diag)
 
         for idea in raw_ideas:
+            idea["trend_diagnostics"] = trend_diag
+            idea["iv_diagnostics"] = iv_rank_data
             scored = score_idea(idea, trend_diag, iv_rank_data)
-            scored["trend_diagnostics"] = trend_diag
-            scored["iv_diagnostics"] = iv_rank_data
             ideas.append(scored)
 
         if verbose:
@@ -96,12 +98,12 @@ def run_pipeline(tickers=None, verbose=True) -> dict:
 
     df = pd.DataFrame(all_ideas)
     if df.empty:
-        return {"csp": df, "spread": df, "leaps": df, "all": df}
+        return {"csp": df, "leveraged_csp": df, "spread": df, "leaps": df, "all": df}
 
     df["composite_score"] = df["scores"].apply(lambda s: s["composite"])
 
     results = {}
-    for strategy in ["csp", "spread", "leaps"]:
+    for strategy in ["csp", "leveraged_csp", "spread", "leaps"]:
         sub = df[df["strategy"] == strategy].copy()
         min_score = MIN_SCORE_TO_REPORT[strategy]
         sub = sub[sub["composite_score"] >= min_score]
@@ -117,7 +119,7 @@ def run_pipeline(tickers=None, verbose=True) -> dict:
 if __name__ == "__main__":
     verbose = "--quiet" not in sys.argv
     results = run_pipeline(verbose=verbose)
-    for strategy in ["csp", "spread", "leaps"]:
+    for strategy in ["csp", "leveraged_csp", "spread", "leaps"]:
         sub = results[strategy]
         print(f"\n=== {strategy.upper()} — {len(sub)} ideas above threshold ===")
         if not sub.empty:

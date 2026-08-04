@@ -30,14 +30,17 @@ from config import (
     REPORT_EXCEPTIONAL_THRESHOLD,
     REPORT_MAX_BONUS_IDEAS,
     MIN_SCORE_TO_REPORT,
+    LEVERAGED_ETF_PAIRS,
 )
 from thesis import generate_thesis
+from scoring import estimate_annual_decay_pct
 
 OUTPUT_DIR = "docs"
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "index.html")
 
 STRATEGY_LABELS = {
     "csp": "Cash-Secured Put",
+    "leveraged_csp": "Leveraged ETF CSP",
     "spread": "Spread",
     "leaps": "LEAPS",
 }
@@ -51,21 +54,40 @@ def _score_color(score: float) -> str:
     return "#6b7280"
 
 
+def _suppress_weaker_pair(df: pd.DataFrame) -> pd.DataFrame:
+    """If both sides of a known inverse pair (TQQQ/SQQQ, etc.) qualify on
+    the same day, drop the weaker-scoring half entirely -- the next-best
+    non-conflicting idea takes its place instead of just losing a slot."""
+    if df.empty:
+        return df
+    suppressed = set()
+    for a, b in LEVERAGED_ETF_PAIRS:
+        row_a = df[df["ticker"] == a]
+        row_b = df[df["ticker"] == b]
+        if not row_a.empty and not row_b.empty:
+            score_a = row_a["composite_score"].iloc[0]
+            score_b = row_b["composite_score"].iloc[0]
+            suppressed.add(a if score_a < score_b else b)
+    return df[~df["ticker"].isin(suppressed)]
+
+
 def _select_daily_ideas(results: dict):
     """Returns (core_csps, leveraged_csps, top_spreads, bonus_leaps) per
-    your reporting style: core CSPs exclude leveraged ETFs (those get their
-    own dedicated track), spreads are shown daily as a testing track, and
-    LEAPs stay purely opportunistic (exceptional-only)."""
+    your reporting style: core CSPs exclude leveraged ETFs entirely (they
+    now route through their own dedicated strategy/screener), spreads are
+    shown daily as a testing track, and LEAPs stay purely opportunistic
+    (exceptional-only)."""
     csp_df = results["csp"]
+    core = csp_df.sort_values("composite_score", ascending=False).head(REPORT_CSP_COUNT) \
+        if not csp_df.empty else csp_df
 
-    if csp_df.empty:
-        core = csp_df
-        leveraged_csps = csp_df
+    leveraged_df = results["leveraged_csp"]
+    if leveraged_df.empty:
+        leveraged_csps = leveraged_df
     else:
-        non_leveraged = csp_df[csp_df["bucket"] != "leveraged_etf"]
-        leveraged = csp_df[csp_df["bucket"] == "leveraged_etf"]
-        core = non_leveraged.sort_values("composite_score", ascending=False).head(REPORT_CSP_COUNT)
-        leveraged_csps = leveraged.sort_values("composite_score", ascending=False).head(REPORT_LEVERAGED_CSP_COUNT)
+        ranked = leveraged_df.sort_values("composite_score", ascending=False)
+        ranked = _suppress_weaker_pair(ranked)
+        leveraged_csps = ranked.head(REPORT_LEVERAGED_CSP_COUNT)
 
     spread_df = results["spread"]
     top_spreads = spread_df.sort_values("composite_score", ascending=False).head(REPORT_SPREAD_COUNT) \
@@ -83,7 +105,7 @@ def _select_daily_ideas(results: dict):
 
 def _headline(idea: dict) -> str:
     strategy = idea["strategy"]
-    if strategy == "csp":
+    if strategy in ("csp", "leveraged_csp"):
         return f"Sell {idea['ticker']} ${idea['short_strike']} Put"
     if strategy == "spread":
         return f"{idea['sub_type'].split(' (')[0].title()}: {idea['ticker']} {idea['short_strike']}/{idea['long_strike']}"
@@ -136,6 +158,23 @@ def _detail_rows(idea: dict):
             *tech_rows,
             ("Next Earnings", _earnings_display(idea)),
         ]
+    if strategy == "leveraged_csp":
+        decay_pct = estimate_annual_decay_pct(idea)
+        rows = [
+            ("Expiry", f"{idea['expiry']} ({idea['dte']}d)"),
+            ("Delta", idea["delta"]),
+            ("Premium", f"${idea['premium_per_contract']:.2f}"),
+            ("Cash Secured", f"${idea['cash_secured']:.2f}"),
+            ("Annualized Return", f"{idea['annualized_return_pct']:.1f}%"),
+            ("Breakeven", f"${idea['breakeven']:.2f}"),
+            ("IV", f"{idea['iv']}%" if idea['iv'] else "n/a"),
+            ("Open Interest", idea["open_interest"]),
+            ("Leverage", f"{idea.get('leverage_multiplier', 3)}x"),
+        ]
+        if decay_pct is not None:
+            rows.append(("Est. Annual Decay", f"{decay_pct:.1f}%"))
+        rows += [*tech_rows, ("Next Earnings", _earnings_display(idea))]
+        return rows
     if strategy == "spread":
         return [
             ("Expiry", f"{idea['expiry']} ({idea['dte']}d)"),

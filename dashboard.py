@@ -68,7 +68,7 @@ elif df.empty:
     st.warning("No candidates passed the screening rules. Try loosening thresholds in config.py.")
 else:
     st.caption(f"Last scanned: {st.session_state.scanned_at.strftime('%Y-%m-%d %H:%M')}")
-    tabs = st.tabs(["Cash-Secured Puts", "Spreads", "LEAPs", "All Ideas (raw)"])
+    tabs = st.tabs(["Cash-Secured Puts", "Leveraged ETF CSPs", "Spreads", "LEAPs", "All Ideas (raw)"])
 
     from config import MIN_SCORE_TO_REPORT
 
@@ -101,9 +101,11 @@ else:
     with tabs[0]:
         render_strategy_tab("csp", [])
     with tabs[1]:
-        render_strategy_tab("spread", [])
+        render_strategy_tab("leveraged_csp", [])
     with tabs[2]:
-        render_strategy_tab("leaps", [])
+        render_strategy_tab("spread", [])
     with tabs[3]:
+        render_strategy_tab("leaps", [])
+    with tabs[4]:
         st.dataframe(df.drop(columns=["scores", "trend_diagnostics", "iv_diagnostics"],
                               errors="ignore"))

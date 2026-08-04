@@ -22,7 +22,11 @@ from config import (
     CSP_LIQUIDITY_OI_TARGET,
     CSP_LIQUIDITY_SPREAD_TARGET_PCT,
     CSP_LIQUIDITY_VOLUME_BONUS,
-    CSP_LEVERAGED_ETF_RISK_PENALTY,
+    LEVERAGED_CSP_PREMIUM_RAW_RETURN_TARGET_PCT,
+    LEVERAGED_CSP_PREMIUM_ANNUALIZED_TARGET_PCT,
+    LEVERAGED_CSP_PREMIUM_RAW_RETURN_WEIGHT,
+    LEVERAGED_CSP_RISK_WEIGHTS,
+    LEVERAGED_CSP_DECAY_TARGET_PCT,
 )
 
 
@@ -44,7 +48,7 @@ def score_technicals(trend_diag: dict, strategy: str) -> float:
     # a caution since you're taking on long-dated directional exposure.
     rsi = trend_diag.get("rsi")
     if rsi is not None:
-        if strategy == "csp":
+        if strategy in ("csp", "leveraged_csp"):
             if rsi < 30:
                 base += 8       # oversold = opportunity for premium selling
             elif 45 <= rsi <= 65:
@@ -59,10 +63,10 @@ def score_technicals(trend_diag: dict, strategy: str) -> float:
             elif rsi < 30:
                 base -= 6       # oversold still a caution for LEAPs/spreads
 
-    # Bollinger %B -- CSP-only for now, lightly weighted since it's
-    # correlated with RSI (both measure "how stretched is this move").
+    # Bollinger %B -- premium-selling strategies only, lightly weighted since
+    # it's correlated with RSI (both measure "how stretched is this move").
     # Keeping the magnitude modest avoids double-counting the same read.
-    if strategy == "csp":
+    if strategy in ("csp", "leveraged_csp"):
         percent_b = trend_diag.get("percent_b")
         if percent_b is not None:
             if percent_b < 0:
@@ -110,6 +114,21 @@ def score_premium_csp(idea: dict) -> float:
     return _clip100(w * raw_score + (1 - w) * ann_score)
 
 
+def score_premium_leveraged_csp(idea: dict) -> float:
+    """Same smooth blend as core CSP premium, recalibrated targets: lower raw-
+    return target (the 0.02-0.20 delta range intentionally includes far-OTM,
+    deliberately thin-premium plays) and higher annualized target (these
+    products' elevated IV supports richer annualized figures)."""
+    raw_return_pct = (idea["premium_per_contract"] / idea["cash_secured"]) * 100
+    annualized_pct = idea["annualized_return_pct"]
+
+    raw_score = _logistic_target_curve(raw_return_pct, LEVERAGED_CSP_PREMIUM_RAW_RETURN_TARGET_PCT)
+    ann_score = _logistic_target_curve(annualized_pct, LEVERAGED_CSP_PREMIUM_ANNUALIZED_TARGET_PCT)
+
+    w = LEVERAGED_CSP_PREMIUM_RAW_RETURN_WEIGHT
+    return _clip100(w * raw_score + (1 - w) * ann_score)
+
+
 def score_premium_spread(idea: dict) -> float:
     ctw = idea["credit_to_width_pct"]  # credit as % of width
     return _clip100((ctw - 15) / (50 - 15) * 100)
@@ -134,6 +153,36 @@ def _expected_move_pct(idea: dict) -> float:
     return (iv_pct / 100.0) * np.sqrt(dte / 365.0) * 100.0
 
 
+def _liquidity_score(idea: dict) -> float:
+    """Graduated OI/spread curves with a low floor (not a hard cutoff), so
+    legitimately thinner names aren't gated out. Same-day volume is a bonus
+    only -- its absence never costs points. Shared across CSP categories."""
+    oi_score = _logistic_target_curve(idea.get("open_interest", 0), CSP_LIQUIDITY_OI_TARGET)
+    spread_score = 100 - _logistic_target_curve(idea.get("bid_ask_spread_pct", 0),
+                                                 CSP_LIQUIDITY_SPREAD_TARGET_PCT)
+    liquidity_score = 0.5 * oi_score + 0.5 * spread_score
+    if idea.get("volume", 0) > 0:
+        liquidity_score = _clip100(liquidity_score + CSP_LIQUIDITY_VOLUME_BONUS)
+    return liquidity_score
+
+
+def estimate_annual_decay_pct(idea: dict):
+    """
+    Estimated annual volatility-decay drag from daily-reset leveraged
+    compounding: 0.5 x (L-1)/L x realized_vol^2. Derived entirely from data
+    already fetched (realized vol + known leverage multiplier) -- no new
+    data source needed. Returns None if realized vol isn't available.
+    """
+    iv_diag = idea.get("iv_diagnostics") or {}
+    realized_vol_pct = iv_diag.get("current_realized_vol_pct")
+    if realized_vol_pct is None:
+        return None
+    L = idea.get("leverage_multiplier", 3)
+    sigma = realized_vol_pct / 100.0
+    decay = 0.5 * (L - 1) / L * (sigma ** 2)
+    return round(decay * 100.0, 2)
+
+
 def score_risk_csp(idea: dict) -> float:
     # --- Cushion: breakeven distance scaled to this trade's own expected move,
     # so a wide-moving name and a calm one are held to different (fair) bars,
@@ -151,16 +200,7 @@ def score_risk_csp(idea: dict) -> float:
     else:
         volatility_score = 100 - _logistic_target_curve(realized_vol, CSP_VOLATILITY_RISK_TARGET_PCT)
 
-    # --- Liquidity: graduated curves with a low floor (not a hard cutoff), so
-    # legitimately thinner names aren't gated out. Same-day volume is a bonus
-    # only -- its absence never costs points, since good opportunities in
-    # less-traded names don't necessarily trade every single day.
-    oi_score = _logistic_target_curve(idea.get("open_interest", 0), CSP_LIQUIDITY_OI_TARGET)
-    spread_score = 100 - _logistic_target_curve(idea.get("bid_ask_spread_pct", 0),
-                                                 CSP_LIQUIDITY_SPREAD_TARGET_PCT)
-    liquidity_score = 0.5 * oi_score + 0.5 * spread_score
-    if idea.get("volume", 0) > 0:
-        liquidity_score = _clip100(liquidity_score + CSP_LIQUIDITY_VOLUME_BONUS)
+    liquidity_score = _liquidity_score(idea)
 
     w = CSP_RISK_WEIGHTS
     blended = (
@@ -169,8 +209,36 @@ def score_risk_csp(idea: dict) -> float:
         + w["volatility"] * volatility_score
     )
 
-    if idea.get("bucket") == "leveraged_etf":
-        blended -= CSP_LEVERAGED_ETF_RISK_PENALTY
+    return _clip100(blended)
+
+
+def score_risk_leveraged_csp(idea: dict) -> float:
+    """
+    Risk blend for leveraged ETF CSPs: decay REPLACES the standalone
+    volatility factor (rather than stacking alongside it), since decay is a
+    strictly more informative transformation of the same underlying realized-
+    vol number -- it tells you the actual expected cost, not just a raw vol
+    reading. No separate flat leveraged-ETF penalty either; decay now
+    captures that structural risk directly and precisely.
+    """
+    raw_cushion_pct = (idea["underlying_price"] - idea["breakeven"]) / idea["underlying_price"] * 100
+    cushion_target = _expected_move_pct(idea) * CSP_CUSHION_TARGET_MULTIPLIER
+    cushion_score = _logistic_target_curve(raw_cushion_pct, cushion_target)
+
+    decay_pct = estimate_annual_decay_pct(idea)
+    if decay_pct is None:
+        decay_score = 50.0
+    else:
+        decay_score = 100 - _logistic_target_curve(decay_pct, LEVERAGED_CSP_DECAY_TARGET_PCT)
+
+    liquidity_score = _liquidity_score(idea)
+
+    w = LEVERAGED_CSP_RISK_WEIGHTS
+    blended = (
+        w["decay"] * decay_score
+        + w["cushion"] * cushion_score
+        + w["liquidity"] * liquidity_score
+    )
 
     return _clip100(blended)
 
@@ -178,6 +246,8 @@ def score_risk_csp(idea: dict) -> float:
 def score_risk(idea: dict, strategy: str) -> float:
     if strategy == "csp":
         return score_risk_csp(idea)
+    if strategy == "leveraged_csp":
+        return score_risk_leveraged_csp(idea)
 
     score = 70.0  # baseline
     if strategy == "spread":
@@ -227,6 +297,8 @@ def score_idea(idea: dict, trend_diag: dict, iv_metrics: dict) -> dict:
 
     if strategy == "csp":
         premium = score_premium_csp(idea)
+    elif strategy == "leveraged_csp":
+        premium = score_premium_leveraged_csp(idea)
     elif strategy == "spread":
         premium = score_premium_spread(idea)
     else:
