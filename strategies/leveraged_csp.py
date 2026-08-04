@@ -1,25 +1,28 @@
 """
-Cash-Secured Put screener.
-
-For each ticker: pull chain, filter expirations to the target DTE window,
-find puts near the target delta band, apply liquidity/premium filters,
-and emit structured trade-idea dicts ready for scoring.
+Leveraged ETF Cash-Secured Put screener -- its own dedicated category, not a
+sub-case of the core CSP screener. Different DTE window (shorter -- these
+aren't meant to be held past ~a month), different delta range (wider/lower --
+elevated IV on these products means even far-OTM strikes can carry real
+premium), and different scoring downstream (see scoring.py:
+score_premium_leveraged_csp, score_risk_leveraged_csp).
 """
 
 from __future__ import annotations
 import datetime as dt
 import pandas as pd
-from config import SCREEN, bucket_of
-from greeks import add_delta_column, years_to_expiry
+from config import SCREEN, bucket_of, LEVERAGED_ETF_MULTIPLIER
+from greeks import add_delta_column
 
 
-def find_csp_candidates(ticker, snapshot, hist, next_earnings, earnings_status, screen=SCREEN):
+def find_leveraged_csp_candidates(ticker, snapshot, hist, next_earnings, earnings_status, screen=SCREEN):
     bucket = bucket_of(ticker)
-    if bucket == "leveraged_etf":
-        return []  # leveraged ETFs have their own dedicated screener -- see leveraged_csp.py
+    if bucket != "leveraged_etf":
+        return []  # this screener only runs against the leveraged_etf bucket
 
     ideas = []
-    min_dte, max_dte = screen["csp_min_dte"], screen["csp_max_dte"]
+    min_dte = screen["leveraged_csp_min_dte"]
+    max_dte = screen["leveraged_csp_max_dte"]
+    leverage_multiplier = LEVERAGED_ETF_MULTIPLIER.get(ticker, 3)
 
     for expiry in snapshot.expirations:
         exp_date = dt.datetime.strptime(expiry, "%Y-%m-%d").date()
@@ -27,7 +30,7 @@ def find_csp_candidates(ticker, snapshot, hist, next_earnings, earnings_status, 
         if not (min_dte <= dte <= max_dte):
             continue
 
-        # avoid earnings inside the expiration window if configured
+        # earnings avoidance is largely moot for ETFs, but harmless to keep
         if screen["csp_avoid_earnings_within_expiry"] and next_earnings:
             if dt.date.today() <= next_earnings <= exp_date:
                 continue
@@ -37,7 +40,7 @@ def find_csp_candidates(ticker, snapshot, hist, next_earnings, earnings_status, 
             continue
         puts = add_delta_column(puts, snapshot.underlying_price, expiry, "put")
 
-        lo, hi = screen["csp_target_delta_range"]
+        lo, hi = screen["leveraged_csp_target_delta_range"]
         band = puts[(puts["delta"].abs() >= lo) & (puts["delta"].abs() <= hi)]
         if band.empty:
             continue
@@ -54,13 +57,14 @@ def find_csp_candidates(ticker, snapshot, hist, next_earnings, earnings_status, 
             premium = row["mid"] * 100
             annualized_return = (premium / cash_secured) * (365 / max(dte, 1)) * 100
 
-            if annualized_return < screen["csp_min_annualized_return_pct"]:
+            if annualized_return < screen["leveraged_csp_min_annualized_return_pct"]:
                 continue
 
             ideas.append({
-                "strategy": "csp",
+                "strategy": "leveraged_csp",
                 "ticker": ticker,
                 "bucket": bucket,
+                "leverage_multiplier": leverage_multiplier,
                 "expiry": expiry,
                 "dte": dte,
                 "short_strike": row["strike"],
