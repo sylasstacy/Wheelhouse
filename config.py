@@ -108,6 +108,28 @@ CSP_PREMIUM_ANNUALIZED_TARGET_PCT = 40.0    # "ideally" stretch goal
 CSP_PREMIUM_RAW_RETURN_WEIGHT = 0.5         # vs. (1 - this) for annualized
 
 # ---------------------------------------------------------------------------
+# CSP RISK GRADING
+# ---------------------------------------------------------------------------
+# Risk blends three smooth 0-100 sub-factors (weights below), then applies a
+# flat leveraged-ETF penalty on top:
+#   - cushion: breakeven distance, scaled to THIS TRADE's own expected move
+#     (IV x sqrt(DTE/365)) rather than a flat %, so a wide-moving name and a
+#     calm one are held to different (fair) absolute cushion bars
+#   - liquidity: graduated OI + spread curves with a low floor (not a hard
+#     cutoff), plus a same-day-volume bonus that's additive only -- thinly
+#     traded names are never gated out, just nudged
+#   - volatility: the stock's own realized volatility (magnitude), distinct
+#     from the IV-rank timing signal already in the IV category
+
+CSP_RISK_WEIGHTS = {"cushion": 0.40, "liquidity": 0.20, "volatility": 0.40}
+CSP_CUSHION_TARGET_MULTIPLIER = 1.25   # target cushion = this x the trade's expected move
+CSP_VOLATILITY_RISK_TARGET_PCT = 35.0  # realized vol level where the volatility score bottoms out
+CSP_LIQUIDITY_OI_TARGET = 50           # open interest scoring ~90 (down from a flat 300 hard cutoff)
+CSP_LIQUIDITY_SPREAD_TARGET_PCT = 6.0  # bid-ask spread % where the liquidity score bottoms out
+CSP_LIQUIDITY_VOLUME_BONUS = 5         # flat bump if the contract traded today -- never a penalty if not
+CSP_LEVERAGED_ETF_RISK_PENALTY = 15    # same magnitude as before, applied after the blend
+
+# ---------------------------------------------------------------------------
 # SCORING WEIGHTS
 # ---------------------------------------------------------------------------
 # Composite score = weighted sum of 0-100 sub-scores. Weights should sum to 1.0
