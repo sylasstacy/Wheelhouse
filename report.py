@@ -5,10 +5,12 @@ automated job (see .github/workflows/daily_scan.yml) and published via
 GitHub Pages.
 
 Report composition (your style, set in config.py):
-  - Always shows the best REPORT_CSP_COUNT cash-secured puts that clear
-    the CSP score threshold -- this is the daily core.
-  - Spreads/LEAPs are opportunistic: only added if they score at or above
-    REPORT_EXCEPTIONAL_THRESHOLD, capped at REPORT_MAX_BONUS_IDEAS.
+  - Core: best REPORT_CSP_COUNT cash-secured puts, excluding leveraged ETFs
+  - Leveraged ETF CSPs: best REPORT_LEVERAGED_CSP_COUNT, shown daily as a
+    dedicated testing track (not gated behind the exceptional bar)
+  - Spreads: best REPORT_SPREAD_COUNT, shown daily as a dedicated testing
+    track (not gated behind the exceptional bar)
+  - LEAPs: purely opportunistic -- only shown if score >= REPORT_EXCEPTIONAL_THRESHOLD
   - Every idea gets an AI-written thesis (see thesis.py), with a safe
     template fallback if no API key is configured.
 
@@ -21,7 +23,14 @@ import datetime as dt
 import os
 import pandas as pd
 from pipeline import run_pipeline
-from config import REPORT_CSP_COUNT, REPORT_EXCEPTIONAL_THRESHOLD, REPORT_MAX_BONUS_IDEAS
+from config import (
+    REPORT_CSP_COUNT,
+    REPORT_LEVERAGED_CSP_COUNT,
+    REPORT_SPREAD_COUNT,
+    REPORT_EXCEPTIONAL_THRESHOLD,
+    REPORT_MAX_BONUS_IDEAS,
+    MIN_SCORE_TO_REPORT,
+)
 from thesis import generate_thesis
 
 OUTPUT_DIR = "docs"
@@ -43,26 +52,33 @@ def _score_color(score: float) -> str:
 
 
 def _select_daily_ideas(results: dict):
-    """Returns (core_csps, bonus_ideas) per your reporting style."""
+    """Returns (core_csps, leveraged_csps, top_spreads, bonus_leaps) per
+    your reporting style: core CSPs exclude leveraged ETFs (those get their
+    own dedicated track), spreads are shown daily as a testing track, and
+    LEAPs stay purely opportunistic (exceptional-only)."""
     csp_df = results["csp"]
-    core = csp_df.sort_values("composite_score", ascending=False).head(REPORT_CSP_COUNT) \
-        if not csp_df.empty else csp_df
 
-    bonus_frames = []
-    for strategy in ["spread", "leaps"]:
-        sub = results[strategy]
-        if sub.empty:
-            continue
-        exceptional = sub[sub["composite_score"] >= REPORT_EXCEPTIONAL_THRESHOLD]
-        bonus_frames.append(exceptional)
-
-    if bonus_frames:
-        bonus = pd.concat(bonus_frames)
-        bonus = bonus.sort_values("composite_score", ascending=False).head(REPORT_MAX_BONUS_IDEAS)
+    if csp_df.empty:
+        core = csp_df
+        leveraged_csps = csp_df
     else:
-        bonus = pd.DataFrame()
+        non_leveraged = csp_df[csp_df["bucket"] != "leveraged_etf"]
+        leveraged = csp_df[csp_df["bucket"] == "leveraged_etf"]
+        core = non_leveraged.sort_values("composite_score", ascending=False).head(REPORT_CSP_COUNT)
+        leveraged_csps = leveraged.sort_values("composite_score", ascending=False).head(REPORT_LEVERAGED_CSP_COUNT)
 
-    return core, bonus
+    spread_df = results["spread"]
+    top_spreads = spread_df.sort_values("composite_score", ascending=False).head(REPORT_SPREAD_COUNT) \
+        if not spread_df.empty else spread_df
+
+    leaps_df = results["leaps"]
+    if leaps_df.empty:
+        bonus_leaps = leaps_df
+    else:
+        exceptional = leaps_df[leaps_df["composite_score"] >= REPORT_EXCEPTIONAL_THRESHOLD]
+        bonus_leaps = exceptional.sort_values("composite_score", ascending=False).head(REPORT_MAX_BONUS_IDEAS)
+
+    return core, leveraged_csps, top_spreads, bonus_leaps
 
 
 def _headline(idea: dict) -> str:
@@ -172,43 +188,60 @@ def _idea_card(idea: dict, badge=None) -> str:
     """
 
 
+def _section(title: str, df: pd.DataFrame, empty_msg: str, note: str = None, badge_fn=None) -> str:
+    if df.empty:
+        cards_html = f'<p class="empty">{empty_msg}</p>'
+    else:
+        cards_html = "".join(
+            _idea_card(row.to_dict(), badge=badge_fn(row) if badge_fn else None)
+            for _, row in df.iterrows()
+        )
+    note_html = f'<p class="section-note">{note}</p>' if note else ""
+    count = 0 if df.empty else len(df)
+    return f"""
+    <section>
+      <h2>{title} <span class="count">({count})</span></h2>
+      {note_html}
+      <div class="cards">{cards_html}</div>
+    </section>
+    """
+
+
 def generate_report():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     results = run_pipeline(verbose=True)
-    core, bonus = _select_daily_ideas(results)
+    core, leveraged_csps, top_spreads, bonus_leaps = _select_daily_ideas(results)
 
     now = dt.datetime.now().strftime("%A, %B %d %Y — %I:%M %p")
 
-    if core.empty:
-        core_html = '<p class="empty">No cash-secured puts cleared the score threshold today.</p>'
-        core_count = 0
-    else:
-        core_html = "".join(_idea_card(row.to_dict()) for _, row in core.iterrows())
-        core_count = len(core)
+    core_count = 0 if core.empty else len(core)
+    all_frames = [df for df in [core, leveraged_csps, top_spreads, bonus_leaps] if not df.empty]
+    total_shown = sum(len(df) for df in all_frames)
+    avg_score = round(pd.concat([df["composite_score"] for df in all_frames]).mean(), 1) \
+        if all_frames else None
 
-    total_shown = core_count + (0 if bonus.empty else len(bonus))
-    avg_score = None
-    if not core.empty or not bonus.empty:
-        all_scores = pd.concat([
-            core["composite_score"] if not core.empty else pd.Series(dtype=float),
-            bonus["composite_score"] if not bonus.empty else pd.Series(dtype=float),
-        ])
-        avg_score = round(all_scores.mean(), 1) if not all_scores.empty else None
-
-    if bonus.empty:
-        bonus_section = ""
-    else:
-        bonus_cards = "".join(
-            _idea_card(row.to_dict(), badge=f"⭐ {STRATEGY_LABELS[row['strategy']]}")
-            for _, row in bonus.iterrows()
-        )
-        bonus_section = f"""
-        <section>
-          <h2>Bonus: Exceptional Opportunities <span class="count">({len(bonus)})</span></h2>
-          <p class="section-note">Spreads/LEAPs that cleared the {REPORT_EXCEPTIONAL_THRESHOLD}+ bar today.</p>
-          <div class="cards">{bonus_cards}</div>
-        </section>
-        """
+    core_section = _section(
+        "Today's Cash-Secured Puts", core,
+        "No cash-secured puts cleared the score threshold today."
+    )
+    leveraged_section = _section(
+        "Leveraged ETF CSPs (Testing)", leveraged_csps,
+        f"No leveraged ETF CSPs cleared the {MIN_SCORE_TO_REPORT['csp']}+ threshold today.",
+        note="Dedicated testing track for your leveraged-ETF CSP sleeve — shown daily, not gated behind an exceptional bar.",
+        badge_fn=lambda row: "⚡ Leveraged ETF"
+    )
+    spread_section = _section(
+        "Top Spreads (Testing)", top_spreads,
+        f"No spreads cleared the {MIN_SCORE_TO_REPORT['spread']}+ threshold today.",
+        note="Dedicated testing track for spreads — shown daily, not gated behind an exceptional bar.",
+        badge_fn=lambda row: "📐 Spread"
+    )
+    bonus_section = _section(
+        "Bonus: Exceptional LEAPs", bonus_leaps,
+        f"No LEAPs cleared the {REPORT_EXCEPTIONAL_THRESHOLD}+ bar today.",
+        note=f"LEAPs that cleared the {REPORT_EXCEPTIONAL_THRESHOLD}+ bar today — purely opportunistic.",
+        badge_fn=lambda row: "⭐ LEAPS"
+    ) if not bonus_leaps.empty else ""
 
     stats_html = ""
     if avg_score is not None:
@@ -217,7 +250,8 @@ def generate_report():
           <div class="stat"><div class="stat-num">{total_shown}</div><div class="stat-label">Ideas Today</div></div>
           <div class="stat"><div class="stat-num">{avg_score}</div><div class="stat-label">Avg Score</div></div>
           <div class="stat"><div class="stat-num">{core_count}</div><div class="stat-label">Core CSPs</div></div>
-          <div class="stat"><div class="stat-num">{0 if bonus.empty else len(bonus)}</div><div class="stat-label">Bonus Ideas</div></div>
+          <div class="stat"><div class="stat-num">{0 if leveraged_csps.empty else len(leveraged_csps)}</div><div class="stat-label">Leveraged CSPs</div></div>
+          <div class="stat"><div class="stat-num">{0 if top_spreads.empty else len(top_spreads)}</div><div class="stat-label">Spreads</div></div>
         </div>
         """
 
@@ -308,10 +342,9 @@ def generate_report():
   not live news. Verify against your broker before trading.
 </div>
 <main>
-  <section>
-    <h2>Today's Cash-Secured Puts <span class="count">({core_count})</span></h2>
-    <div class="cards">{core_html}</div>
-  </section>
+  {core_section}
+  {leveraged_section}
+  {spread_section}
   {bonus_section}
 </main>
 </body>
