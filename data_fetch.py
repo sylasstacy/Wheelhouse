@@ -9,9 +9,11 @@ names regardless of backend.
 
 from __future__ import annotations
 import datetime as dt
+import os
 from dataclasses import dataclass, field
 import pandas as pd
 import numpy as np
+import requests
 
 try:
     import yfinance as yf
@@ -103,14 +105,47 @@ def _clean_chain(df: pd.DataFrame) -> pd.DataFrame:
 def get_next_earnings_date(ticker: str):
     """
     Returns (date_or_None, status) where status is one of:
-      'confirmed'   - a specific upcoming earnings date was found
-      'unavailable' - the fetch failed, returned nothing, or looked incomplete;
-                       genuinely unknown, NOT the same as "confirmed no earnings"
+      'confirmed'   - either a specific upcoming earnings date was found, OR
+                       the source responded successfully with nothing upcoming
+                       (a genuine confirmed-clean result, not a guess)
+      'unavailable' - the fetch itself failed or wasn't configured; genuinely
+                       unknown, NOT the same as "confirmed no earnings"
 
-    This distinction matters: silently treating a failed fetch as "no earnings"
-    would hide real event risk. Downstream code should treat 'unavailable' as
-    a reason for mild caution, not a clean bill of health.
+    Tries Finnhub first (purpose-built earnings calendar, needs FINNHUB_API_KEY),
+    falls back to yfinance's calendar scrape only if Finnhub isn't configured
+    or its request fails -- so this works with zero setup, and gets more
+    reliable once FINNHUB_API_KEY is added.
     """
+    date, status = _get_next_earnings_date_finnhub(ticker)
+    if status == "confirmed":
+        return date, status
+    return _get_next_earnings_date_yfinance(ticker)
+
+
+def _get_next_earnings_date_finnhub(ticker: str):
+    api_key = os.environ.get("FINNHUB_API_KEY")
+    if not api_key:
+        return None, "unavailable"
+    try:
+        today = dt.date.today()
+        horizon = today + dt.timedelta(days=120)  # comfortably covers all screening DTE windows
+        url = (
+            "https://finnhub.io/api/v1/calendar/earnings"
+            f"?symbol={ticker}&from={today.isoformat()}&to={horizon.isoformat()}&token={api_key}"
+        )
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        events = resp.json().get("earningsCalendar", [])
+        dates = sorted(e["date"] for e in events if e.get("date"))
+        if not dates:
+            return None, "confirmed"   # Finnhub responded successfully with nothing upcoming
+        next_date = dt.datetime.strptime(dates[0], "%Y-%m-%d").date()
+        return next_date, "confirmed"
+    except Exception:
+        return None, "unavailable"
+
+
+def _get_next_earnings_date_yfinance(ticker: str):
     if yf is None:
         return None, "unavailable"
     try:
