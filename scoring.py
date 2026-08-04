@@ -16,6 +16,13 @@ from config import (
     CSP_PREMIUM_RAW_RETURN_TARGET_PCT,
     CSP_PREMIUM_ANNUALIZED_TARGET_PCT,
     CSP_PREMIUM_RAW_RETURN_WEIGHT,
+    CSP_RISK_WEIGHTS,
+    CSP_CUSHION_TARGET_MULTIPLIER,
+    CSP_VOLATILITY_RISK_TARGET_PCT,
+    CSP_LIQUIDITY_OI_TARGET,
+    CSP_LIQUIDITY_SPREAD_TARGET_PCT,
+    CSP_LIQUIDITY_VOLUME_BONUS,
+    CSP_LEVERAGED_ETF_RISK_PENALTY,
 )
 
 
@@ -114,16 +121,66 @@ def score_premium_leaps(idea: dict) -> float:
     return _clip100(100 - (ext_pct / 15 * 100))
 
 
+def _expected_move_pct(idea: dict) -> float:
+    """1-std-dev expected move for THIS trade: IV x sqrt(DTE/365). Falls back
+    to a flat 8% if IV is genuinely unavailable, so scoring never breaks."""
+    iv_pct = idea.get("iv")
+    if iv_pct is None:
+        iv_diag = idea.get("iv_diagnostics") or {}
+        iv_pct = iv_diag.get("current_atm_iv_pct")
+    dte = idea.get("dte")
+    if iv_pct is None or not dte:
+        return 8.0
+    return (iv_pct / 100.0) * np.sqrt(dte / 365.0) * 100.0
+
+
+def score_risk_csp(idea: dict) -> float:
+    # --- Cushion: breakeven distance scaled to this trade's own expected move,
+    # so a wide-moving name and a calm one are held to different (fair) bars,
+    # instead of one flat % target for every ticker regardless of character.
+    raw_cushion_pct = (idea["underlying_price"] - idea["breakeven"]) / idea["underlying_price"] * 100
+    cushion_target = _expected_move_pct(idea) * CSP_CUSHION_TARGET_MULTIPLIER
+    cushion_score = _logistic_target_curve(raw_cushion_pct, cushion_target)
+
+    # --- Volatility: the stock's own realized vol (magnitude), independent of
+    # the IV-rank timing signal already scored in the IV category.
+    iv_diag = idea.get("iv_diagnostics") or {}
+    realized_vol = iv_diag.get("current_realized_vol_pct")
+    if realized_vol is None:
+        volatility_score = 50.0
+    else:
+        volatility_score = 100 - _logistic_target_curve(realized_vol, CSP_VOLATILITY_RISK_TARGET_PCT)
+
+    # --- Liquidity: graduated curves with a low floor (not a hard cutoff), so
+    # legitimately thinner names aren't gated out. Same-day volume is a bonus
+    # only -- its absence never costs points, since good opportunities in
+    # less-traded names don't necessarily trade every single day.
+    oi_score = _logistic_target_curve(idea.get("open_interest", 0), CSP_LIQUIDITY_OI_TARGET)
+    spread_score = 100 - _logistic_target_curve(idea.get("bid_ask_spread_pct", 0),
+                                                 CSP_LIQUIDITY_SPREAD_TARGET_PCT)
+    liquidity_score = 0.5 * oi_score + 0.5 * spread_score
+    if idea.get("volume", 0) > 0:
+        liquidity_score = _clip100(liquidity_score + CSP_LIQUIDITY_VOLUME_BONUS)
+
+    w = CSP_RISK_WEIGHTS
+    blended = (
+        w["cushion"] * cushion_score
+        + w["liquidity"] * liquidity_score
+        + w["volatility"] * volatility_score
+    )
+
+    if idea.get("bucket") == "leveraged_etf":
+        blended -= CSP_LEVERAGED_ETF_RISK_PENALTY
+
+    return _clip100(blended)
+
+
 def score_risk(idea: dict, strategy: str) -> float:
-    score = 70.0  # baseline
     if strategy == "csp":
-        if idea["open_interest"] < 300:
-            score -= 10
-        if idea["bid_ask_spread_pct"] > 8:
-            score -= 10
-        if idea["bucket"] == "leveraged_etf":
-            score -= 15  # inherent path-dependency/decay risk
-    elif strategy == "spread":
+        return score_risk_csp(idea)
+
+    score = 70.0  # baseline
+    if strategy == "spread":
         # defined risk is inherently safer than naked exposure
         score += 10
         if idea["bucket"] == "leveraged_etf":
