@@ -194,13 +194,18 @@ def score_risk(idea: dict, strategy: str) -> float:
 
 
 def score_catalyst(idea: dict, days_to_expiry_field="dte") -> float:
-    """Penalize proximity to earnings/binary catalysts inside the trade window."""
+    """
+    Penalize earnings ONLY if they fall inside this specific trade's life
+    (today through expiry). If the contract expires before earnings happens,
+    there's no post-earnings gap to be exposed to during the trade -- so
+    earnings landing after expiry isn't treated as a caution, full stop.
+    """
     if not idea.get("next_earnings"):
         # Distinguish "confirmed nothing coming up" from "couldn't confirm" --
         # the latter deserves mild caution, not full confidence.
         if idea.get("earnings_status") == "unavailable":
             return 60.0
-        return 80.0
+        return 85.0
     try:
         earnings_date = dt.datetime.strptime(idea["next_earnings"], "%Y-%m-%d").date()
     except Exception:
@@ -208,10 +213,7 @@ def score_catalyst(idea: dict, days_to_expiry_field="dte") -> float:
     exp_date = dt.date.today() + dt.timedelta(days=idea[days_to_expiry_field])
     if dt.date.today() <= earnings_date <= exp_date:
         return 20.0  # earnings inside the window = real event risk
-    days_out = (earnings_date - dt.date.today()).days
-    if 0 <= days_out <= 10:
-        return 50.0  # earnings soon after expiry — still worth flagging
-    return 85.0
+    return 85.0  # earnings confirmed, but the trade is done before it happens
 
 
 def score_idea(idea: dict, trend_diag: dict, iv_metrics: dict) -> dict:
