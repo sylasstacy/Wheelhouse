@@ -1,5 +1,8 @@
 name: Wheelhouse Daily Scan
 
+# Runs automatically every weekday morning before market open (13:00 UTC ~ 8am ET,
+# adjust the cron below if you're in a different timezone or want a different time),
+# AND can be triggered manually anytime from the "Actions" tab in GitHub.
 on:
   schedule:
     - cron: "0 13 * * 1-5"
@@ -26,6 +29,7 @@ jobs:
       - name: Run scan and generate report
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
         run: python report.py
 
       - name: Send Slack notification (optional)
@@ -43,5 +47,4 @@ jobs:
           git config user.email "actions@github.com"
           git add docs/index.html
           git diff --quiet && git diff --staged --quiet || git commit -m "Daily scan: $(date -u +'%Y-%m-%d')"
-          git pull --rebase origin main
           git push
