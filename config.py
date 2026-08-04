@@ -174,14 +174,21 @@ MAX_IDEAS_PER_STRATEGY = 8
 # ---------------------------------------------------------------------------
 # DAILY REPORT COMPOSITION
 # ---------------------------------------------------------------------------
-# Your report style: CSPs are the core, always show the best 5 that clear
-# MIN_SCORE_TO_REPORT["csp"]. Spreads/LEAPs only get added on top when
-# they're genuinely exceptional (score >= threshold below) -- not just
-# "good enough," since they're opportunistic, not the daily bread and butter.
+# Your report style: CSPs are the core, always show the best 5 (non-leveraged
+# names) that clear MIN_SCORE_TO_REPORT["csp"]. LEAPs stay purely opportunistic
+# -- only added when genuinely exceptional (score >= threshold below).
+#
+# Two dedicated testing tracks, shown daily regardless of the exceptional
+# bar, so you can build a track record on strategies you're evaluating:
+#   - leveraged ETF CSPs: your core CSP list excludes the leveraged_etf
+#     bucket entirely; those names get their own small section instead
+#   - spreads: shown daily rather than gated behind the exceptional bar
 
 REPORT_CSP_COUNT = 5
-REPORT_EXCEPTIONAL_THRESHOLD = 85   # spreads/LEAPs need this score to make the cut
-REPORT_MAX_BONUS_IDEAS = 3          # cap on how many bonus spread/LEAP ideas per day
+REPORT_LEVERAGED_CSP_COUNT = 2   # top leveraged-ETF CSPs shown daily (testing track)
+REPORT_SPREAD_COUNT = 2          # top spreads shown daily (testing track)
+REPORT_EXCEPTIONAL_THRESHOLD = 85   # LEAPs need this score to make the cut
+REPORT_MAX_BONUS_IDEAS = 3          # cap on how many bonus LEAP ideas per day
 
 
 # ---------------------------------------------------------------------------
