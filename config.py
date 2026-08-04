@@ -21,7 +21,7 @@ UNIVERSE = {
         "CLSK", "HUT", "IREN", "MARA", "RIOT", "USAR",
     ],
     "software_cloud": [
-        "NOW", "PANW", "SNOW", "DDOG", "NET", "CRWD", "MDB", "ZS", "TEAM", "WDAY", "ZETA", "TTD", "RNG", "RDDT"
+        "NOW", "PANW", "SNOW", "DDOG", "NET", "CRWD", "MDB", "ZS", "TEAM", "WDAY", "ZETA", "TTD", "RNG", "RDDT",
         "FIVN", "FIG", "PLTR",
     ],
     "consumer_internet_fintech": [
