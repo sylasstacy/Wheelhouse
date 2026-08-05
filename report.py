@@ -32,6 +32,7 @@ from config import (
 )
 from thesis import generate_thesis
 from scoring import estimate_annual_decay_pct
+import storage
 
 OUTPUT_DIR = "docs"
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "index.html")
@@ -246,6 +247,12 @@ def generate_report():
     results = run_pipeline(verbose=True)
     core, leveraged_csps, top_spreads, top_leaps = _select_daily_ideas(results)
 
+    logged = storage.log_daily_ideas({
+        "csp": core, "leveraged_csp": leveraged_csps,
+        "spread": top_spreads, "leaps": top_leaps,
+    })
+    print(f"Logged {logged} idea(s) to {storage.DB_PATH}")
+
     now = dt.datetime.now().strftime("%A, %B %d %Y — %I:%M %p")
 
     core_count = 0 if core.empty else len(core)
@@ -405,7 +412,7 @@ def generate_report():
 <header>
   <div>
     <h1>🎡 Wheelhouse</h1>
-    <div class="timestamp">Generated {now}</div>
+    <div class="timestamp">Generated {now} · <a href="history.html" style="color:var(--accent);text-decoration:none;font-weight:600;">View history →</a></div>
   </div>
   <div class="header-right">
     {stats_html}
