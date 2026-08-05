@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wheelhouse — Daily Report</title>
+<script>
+  (function() {
+    var stored = localStorage.getItem('wheelhouse-theme');
+    var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+  })();
+</script>
 <style>
   :root {
     color-scheme: light;
@@ -14,6 +21,32 @@
     --border: #e8e9ec;
     --accent: #4f46e5;
     --accent-soft: #eef0ff;
+    --thesis-bg: #f9fafb;
+    --thesis-ink: #374151;
+    --chip-bg: #f3f4f6;
+    --chip-ink: #4b5563;
+    --row-border: #f3f4f6;
+    --disclaimer-bg: #fffbeb;
+    --disclaimer-border: #fde68a;
+    --disclaimer-ink: #92610a;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0f1115;
+    --ink: #e5e7eb;
+    --muted: #9ca3af;
+    --card: #181b21;
+    --border: #2a2e37;
+    --accent: #818cf8;
+    --accent-soft: #262a4a;
+    --thesis-bg: #1c1f26;
+    --thesis-ink: #d1d5db;
+    --chip-bg: #23262e;
+    --chip-ink: #b8bcc4;
+    --row-border: #262a33;
+    --disclaimer-bg: #2a2410;
+    --disclaimer-border: #4a3f14;
+    --disclaimer-ink: #e8c766;
   }
   * { box-sizing: border-box; }
   body {
@@ -26,14 +59,20 @@
   }
   h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.02em; }
   .timestamp { color: var(--muted); font-size: 13px; }
+  .header-right { display: flex; align-items: center; gap: 20px; }
+  .theme-toggle {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 11px; cursor: pointer; font-size: 15px; color: var(--ink); line-height: 1;
+  }
+  .theme-toggle:hover { border-color: var(--accent); }
   .stats { display: flex; gap: 24px; }
   .stat { text-align: center; }
   .stat-num { font-size: 22px; font-weight: 700; color: var(--accent); }
   .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
   .disclaimer {
     max-width: 1100px; margin: 0 auto 28px; padding: 12px 16px;
-    background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px;
-    font-size: 12.5px; color: #92610a; line-height: 1.5;
+    background: var(--disclaimer-bg); border: 1px solid var(--disclaimer-border); border-radius: 10px;
+    font-size: 12.5px; color: var(--disclaimer-ink); line-height: 1.5;
   }
   main { max-width: 1100px; margin: 0 auto; }
   section { margin-bottom: 36px; }
@@ -59,33 +98,36 @@
     border-radius: 20px; flex-shrink: 0;
   }
   .thesis {
-    font-size: 13px; line-height: 1.55; color: #374151; background: #f9fafb;
+    font-size: 13px; line-height: 1.55; color: var(--thesis-ink); background: var(--thesis-bg);
     border-left: 3px solid var(--accent); padding: 10px 13px; margin-bottom: 14px;
     border-radius: 0 8px 8px 0;
   }
-  .row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f3f4f6; }
+  .row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--row-border); }
   .row:last-child { border-bottom: none; }
   .label { color: var(--muted); }
   .val { font-weight: 600; }
   .chips { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
-  .chip { background: #f3f4f6; border-radius: 6px; padding: 3px 9px; font-size: 10.5px; color: #4b5563; font-weight: 500; }
+  .chip { background: var(--chip-bg); border-radius: 6px; padding: 3px 9px; font-size: 10.5px; color: var(--chip-ink); font-weight: 500; }
 </style>
 </head>
 <body>
 <header>
   <div>
     <h1>🎡 Wheelhouse</h1>
-    <div class="timestamp">Generated Wednesday, August 05 2026 — 12:01 AM</div>
+    <div class="timestamp">Generated Wednesday, August 05 2026 — 01:11 AM</div>
   </div>
-  
+  <div class="header-right">
+    
         <div class="stats">
-          <div class="stat"><div class="stat-num">7</div><div class="stat-label">Ideas Today</div></div>
-          <div class="stat"><div class="stat-num">70.2</div><div class="stat-label">Avg Score</div></div>
+          <div class="stat"><div class="stat-num">9</div><div class="stat-label">Ideas Today</div></div>
+          <div class="stat"><div class="stat-num">73.9</div><div class="stat-label">Avg Score</div></div>
           <div class="stat"><div class="stat-num">5</div><div class="stat-label">Core CSPs</div></div>
           <div class="stat"><div class="stat-num">2</div><div class="stat-label">Leveraged CSPs</div></div>
           <div class="stat"><div class="stat-num">0</div><div class="stat-label">Spreads</div></div>
         </div>
         
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">🌙</button>
+  </div>
 </header>
 <div class="disclaimer">
   Informational only, not investment advice. Greeks are Black-Scholes estimates;
@@ -100,52 +142,52 @@
       <div class="cards">
     <div class="card">
       <div class="card-head">
-        <div class="headline">Sell BE $165.0 Put</div>
-        <div class="score" style="background:#b45309">75.7</div>
+        <div class="headline">Sell AMD $430.0 Put</div>
+        <div class="score" style="background:#15803d">86.7</div>
       </div>
-      <div class="thesis">BE trades at $228.11. Selling the $165.0 put (-0.17 delta, 45d to expiry) collects $1152.50 in premium, a 56.6% annualized return on $16500.00 secured. Composite score 75.7/100 (technicals 74.0, IV 74.5, premium 99.1).</div>
-      <div class="details"><div class="row"><span class="label">Expiry</span><span class="val">2026-09-18 (45d)</span></div><div class="row"><span class="label">Delta</span><span class="val">-0.17</span></div><div class="row"><span class="label">Premium</span><span class="val">$1152.50</span></div><div class="row"><span class="label">Cash Secured</span><span class="val">$16500.00</span></div><div class="row"><span class="label">Annualized Return</span><span class="val">56.6%</span></div><div class="row"><span class="label">Breakeven</span><span class="val">$153.47</span></div><div class="row"><span class="label">IV</span><span class="val">125.0%</span></div><div class="row"><span class="label">Open Interest</span><span class="val">718.0</span></div><div class="row"><span class="label">RSI (14d)</span><span class="val">47.5</span></div><div class="row"><span class="label">Above Support</span><span class="val">31.0%</span></div><div class="row"><span class="label">Bollinger %B</span><span class="val">0.62</span></div><div class="row"><span class="label">Bollinger Band Width</span><span class="val">46.5%</span></div><div class="row"><span class="label">vs Swing-High AVWAP (2026-06-25)</span><span class="val">-1.2%</span></div><div class="row"><span class="label">vs Swing-Low AVWAP (2025-08-07)</span><span class="val">+45.8%</span></div><div class="row"><span class="label">Next Earnings</span><span class="val">2026-10-26</span></div></div>
-      <div class="chips"><div class="chip">technicals: 74.0</div><div class="chip">iv: 74.5</div><div class="chip">premium: 99.1</div><div class="chip">risk: 35.2</div><div class="chip">catalyst: 85.0</div></div>
+      <div class="thesis">AMD trades at $518.58. Selling the $430.0 put (-0.19 delta, 44d to expiry) collects $1750.00 in premium, a 33.8% annualized return on $43000.00 secured. Composite score 86.7/100 (technicals 100.0, IV 100.0, premium 90.9).</div>
+      <div class="details"><div class="row"><span class="label">Expiry</span><span class="val">2026-09-18 (44d)</span></div><div class="row"><span class="label">Delta</span><span class="val">-0.19</span></div><div class="row"><span class="label">Premium</span><span class="val">$1750.00</span></div><div class="row"><span class="label">Cash Secured</span><span class="val">$43000.00</span></div><div class="row"><span class="label">Annualized Return</span><span class="val">33.8%</span></div><div class="row"><span class="label">Breakeven</span><span class="val">$412.50</span></div><div class="row"><span class="label">IV</span><span class="val">75.3%</span></div><div class="row"><span class="label">Open Interest</span><span class="val">1664.0</span></div><div class="row"><span class="label">RSI (14d)</span><span class="val">48.4</span></div><div class="row"><span class="label">Above Support</span><span class="val">24.1%</span></div><div class="row"><span class="label">Bollinger %B</span><span class="val">0.55</span></div><div class="row"><span class="label">Bollinger Band Width</span><span class="val">26.6%</span></div><div class="row"><span class="label">vs Swing-High AVWAP (2026-06-30)</span><span class="val">+0.4%</span></div><div class="row"><span class="label">vs Swing-Low AVWAP (2025-09-08)</span><span class="val">+84.3%</span></div><div class="row"><span class="label">Next Earnings</span><span class="val">2026-11-02</span></div></div>
+      <div class="chips"><div class="chip">technicals: 100.0</div><div class="chip">iv: 100.0</div><div class="chip">premium: 90.9</div><div class="chip">risk: 36.8</div><div class="chip">catalyst: 85.0</div></div>
+    </div>
+    
+    <div class="card">
+      <div class="card-head">
+        <div class="headline">Sell SPCX $100.0 Put</div>
+        <div class="score" style="background:#15803d">80.7</div>
+      </div>
+      <div class="thesis">SPCX trades at $125.33. Selling the $100.0 put (-0.18 delta, 23d to expiry) collects $435.00 in premium, a 69.0% annualized return on $10000.00 secured. Composite score 80.7/100 (technicals 63.0, IV 100.0, premium 99.7).</div>
+      <div class="details"><div class="row"><span class="label">Expiry</span><span class="val">2026-08-28 (23d)</span></div><div class="row"><span class="label">Delta</span><span class="val">-0.18</span></div><div class="row"><span class="label">Premium</span><span class="val">$435.00</span></div><div class="row"><span class="label">Cash Secured</span><span class="val">$10000.00</span></div><div class="row"><span class="label">Annualized Return</span><span class="val">69.0%</span></div><div class="row"><span class="label">Breakeven</span><span class="val">$95.65</span></div><div class="row"><span class="label">IV</span><span class="val">116.9%</span></div><div class="row"><span class="label">Open Interest</span><span class="val">2779.0</span></div><div class="row"><span class="label">RSI (14d)</span><span class="val">42.1</span></div><div class="row"><span class="label">Above Support</span><span class="val">16.4%</span></div><div class="row"><span class="label">Bollinger %B</span><span class="val">0.5</span></div><div class="row"><span class="label">Bollinger Band Width</span><span class="val">42.3%</span></div><div class="row"><span class="label">vs Swing-High AVWAP (2026-06-16)</span><span class="val">-17.7%</span></div><div class="row"><span class="label">vs Swing-Low AVWAP (2026-08-03)</span><span class="val">+5.9%</span></div><div class="row"><span class="label">Next Earnings</span><span class="val">nan</span></div></div>
+      <div class="chips"><div class="chip">technicals: 63.0</div><div class="chip">iv: 100.0</div><div class="chip">premium: 99.7</div><div class="chip">risk: 43.6</div><div class="chip">catalyst: 85.0</div></div>
+    </div>
+    
+    <div class="card">
+      <div class="card-head">
+        <div class="headline">Sell BE $165.0 Put</div>
+        <div class="score" style="background:#b45309">76.8</div>
+      </div>
+      <div class="thesis">BE trades at $228.11. Selling the $165.0 put (-0.17 delta, 44d to expiry) collects $1152.50 in premium, a 57.9% annualized return on $16500.00 secured. Composite score 76.8/100 (technicals 74.0, IV 78.8, premium 99.2).</div>
+      <div class="details"><div class="row"><span class="label">Expiry</span><span class="val">2026-09-18 (44d)</span></div><div class="row"><span class="label">Delta</span><span class="val">-0.17</span></div><div class="row"><span class="label">Premium</span><span class="val">$1152.50</span></div><div class="row"><span class="label">Cash Secured</span><span class="val">$16500.00</span></div><div class="row"><span class="label">Annualized Return</span><span class="val">57.9%</span></div><div class="row"><span class="label">Breakeven</span><span class="val">$153.47</span></div><div class="row"><span class="label">IV</span><span class="val">126.4%</span></div><div class="row"><span class="label">Open Interest</span><span class="val">718.0</span></div><div class="row"><span class="label">RSI (14d)</span><span class="val">47.5</span></div><div class="row"><span class="label">Above Support</span><span class="val">31.0%</span></div><div class="row"><span class="label">Bollinger %B</span><span class="val">0.62</span></div><div class="row"><span class="label">Bollinger Band Width</span><span class="val">46.5%</span></div><div class="row"><span class="label">vs Swing-High AVWAP (2026-06-25)</span><span class="val">-1.2%</span></div><div class="row"><span class="label">vs Swing-Low AVWAP (2025-08-07)</span><span class="val">+45.8%</span></div><div class="row"><span class="label">Next Earnings</span><span class="val">2026-10-26</span></div></div>
+      <div class="chips"><div class="chip">technicals: 74.0</div><div class="chip">iv: 78.8</div><div class="chip">premium: 99.2</div><div class="chip">risk: 35.2</div><div class="chip">catalyst: 85.0</div></div>
     </div>
     
     <div class="card">
       <div class="card-head">
         <div class="headline">Sell INTC $85.0 Put</div>
-        <div class="score" style="background:#b45309">73.5</div>
+        <div class="score" style="background:#b45309">75.8</div>
       </div>
-      <div class="thesis">INTC trades at $100.86. Selling the $85.0 put (-0.19 delta, 24d to expiry) collects $274.50 in premium, a 49.1% annualized return on $8500.00 secured. Composite score 73.5/100 (technicals 79.0, IV 60.8, premium 97.7).</div>
-      <div class="details"><div class="row"><span class="label">Expiry</span><span class="val">2026-08-28 (24d)</span></div><div class="row"><span class="label">Delta</span><span class="val">-0.19</span></div><div class="row"><span class="label">Premium</span><span class="val">$274.50</span></div><div class="row"><span class="label">Cash Secured</span><span class="val">$8500.00</span></div><div class="row"><span class="label">Annualized Return</span><span class="val">49.1%</span></div><div class="row"><span class="label">Breakeven</span><span class="val">$82.25</span></div><div class="row"><span class="label">IV</span><span class="val">87.0%</span></div><div class="row"><span class="label">Open Interest</span><span class="val">917.0</span></div><div class="row"><span class="label">RSI (14d)</span><span class="val">48.3</span></div><div class="row"><span class="label">Above Support</span><span class="val">18.9%</span></div><div class="row"><span class="label">Bollinger %B</span><span class="val">0.57</span></div><div class="row"><span class="label">Bollinger Band Width</span><span class="val">33.7%</span></div><div class="row"><span class="label">vs Swing-High AVWAP (2026-06-30)</span><span class="val">-2.0%</span></div><div class="row"><span class="label">vs Swing-Low AVWAP (2025-08-07)</span><span class="val">+61.1%</span></div><div class="row"><span class="label">Next Earnings</span><span class="val">2026-10-21</span></div></div>
-      <div class="chips"><div class="chip">technicals: 79.0</div><div class="chip">iv: 60.8</div><div class="chip">premium: 97.7</div><div class="chip">risk: 37.9</div><div class="chip">catalyst: 85.0</div></div>
+      <div class="thesis">INTC trades at $100.86. Selling the $85.0 put (-0.19 delta, 23d to expiry) collects $274.50 in premium, a 51.2% annualized return on $8500.00 secured. Composite score 75.8/100 (technicals 79.0, IV 69.4, premium 98.1).</div>
+      <div class="details"><div class="row"><span class="label">Expiry</span><span class="val">2026-08-28 (23d)</span></div><div class="row"><span class="label">Delta</span><span class="val">-0.19</span></div><div class="row"><span class="label">Premium</span><span class="val">$274.50</span></div><div class="row"><span class="label">Cash Secured</span><span class="val">$8500.00</span></div><div class="row"><span class="label">Annualized Return</span><span class="val">51.2%</span></div><div class="row"><span class="label">Breakeven</span><span class="val">$82.25</span></div><div class="row"><span class="label">IV</span><span class="val">88.7%</span></div><div class="row"><span class="label">Open Interest</span><span class="val">917.0</span></div><div class="row"><span class="label">RSI (14d)</span><span class="val">48.3</span></div><div class="row"><span class="label">Above Support</span><span class="val">18.9%</span></div><div class="row"><span class="label">Bollinger %B</span><span class="val">0.57</span></div><div class="row"><span class="label">Bollinger Band Width</span><span class="val">33.7%</span></div><div class="row"><span class="label">vs Swing-High AVWAP (2026-06-30)</span><span class="val">-2.0%</span></div><div class="row"><span class="label">vs Swing-Low AVWAP (2025-08-07)</span><span class="val">+61.1%</span></div><div class="row"><span class="label">Next Earnings</span><span class="val">2026-10-21</span></div></div>
+      <div class="chips"><div class="chip">technicals: 79.0</div><div class="chip">iv: 69.4</div><div class="chip">premium: 98.1</div><div class="chip">risk: 37.9</div><div class="chip">catalyst: 85.0</div></div>
     </div>
     
     <div class="card">
       <div class="card-head">
         <div class="headline">Sell ARM $210.0 Put</div>
-        <div class="score" style="background:#b45309">70.3</div>
+        <div class="score" style="background:#b45309">71.2</div>
       </div>
-      <div class="thesis">ARM trades at $280.56. Selling the $210.0 put (-0.14 delta, 45d to expiry) collects $785.00 in premium, a 30.3% annualized return on $21000.00 secured. Composite score 70.3/100 (technicals 68.0, IV 68.1, premium 87.7).</div>
-      <div class="details"><div class="row"><span class="label">Expiry</span><span class="val">2026-09-18 (45d)</span></div><div class="row"><span class="label">Delta</span><span class="val">-0.14</span></div><div class="row"><span class="label">Premium</span><span class="val">$785.00</span></div><div class="row"><span class="label">Cash Secured</span><span class="val">$21000.00</span></div><div class="row"><span class="label">Annualized Return</span><span class="val">30.3%</span></div><div class="row"><span class="label">Breakeven</span><span class="val">$202.15</span></div><div class="row"><span class="label">IV</span><span class="val">91.0%</span></div><div class="row"><span class="label">Open Interest</span><span class="val">1327.0</span></div><div class="row"><span class="label">RSI (14d)</span><span class="val">51.0</span></div><div class="row"><span class="label">Above Support</span><span class="val">28.4%</span></div><div class="row"><span class="label">Bollinger %B</span><span class="val">0.57</span></div><div class="row"><span class="label">Bollinger Band Width</span><span class="val">39.2%</span></div><div class="row"><span class="label">vs Swing-High AVWAP (2026-06-18)</span><span class="val">-12.5%</span></div><div class="row"><span class="label">vs Swing-Low AVWAP (2026-02-05)</span><span class="val">+13.8%</span></div><div class="row"><span class="label">Next Earnings</span><span class="val">2026-11-04</span></div></div>
-      <div class="chips"><div class="chip">technicals: 68.0</div><div class="chip">iv: 68.1</div><div class="chip">premium: 87.7</div><div class="chip">risk: 39.3</div><div class="chip">catalyst: 85.0</div></div>
-    </div>
-    
-    <div class="card">
-      <div class="card-head">
-        <div class="headline">Sell NOW $105.0 Put</div>
-        <div class="score" style="background:#b45309">68.4</div>
-      </div>
-      <div class="thesis">NOW trades at $118.14. Selling the $105.0 put (-0.19 delta, 24d to expiry) collects $226.50 in premium, a 32.8% annualized return on $10500.00 secured. Composite score 68.4/100 (technicals 76.0, IV 53.9, premium 86.5).</div>
-      <div class="details"><div class="row"><span class="label">Expiry</span><span class="val">2026-08-28 (24d)</span></div><div class="row"><span class="label">Delta</span><span class="val">-0.19</span></div><div class="row"><span class="label">Premium</span><span class="val">$226.50</span></div><div class="row"><span class="label">Cash Secured</span><span class="val">$10500.00</span></div><div class="row"><span class="label">Annualized Return</span><span class="val">32.8%</span></div><div class="row"><span class="label">Breakeven</span><span class="val">$102.73</span></div><div class="row"><span class="label">IV</span><span class="val">59.8%</span></div><div class="row"><span class="label">Open Interest</span><span class="val">393.0</span></div><div class="row"><span class="label">RSI (14d)</span><span class="val">62.6</span></div><div class="row"><span class="label">Above Support</span><span class="val">27.7%</span></div><div class="row"><span class="label">Bollinger %B</span><span class="val">0.95</span></div><div class="row"><span class="label">Bollinger Band Width</span><span class="val">22.0%</span></div><div class="row"><span class="label">vs Swing-High AVWAP (2025-09-24)</span><span class="val">+3.1%</span></div><div class="row"><span class="label">vs Swing-Low AVWAP (2026-04-10)</span><span class="val">+16.0%</span></div><div class="row"><span class="label">Next Earnings</span><span class="val">2026-10-27</span></div></div>
-      <div class="chips"><div class="chip">technicals: 76.0</div><div class="chip">iv: 53.9</div><div class="chip">premium: 86.5</div><div class="chip">risk: 38.8</div><div class="chip">catalyst: 85.0</div></div>
-    </div>
-    
-    <div class="card">
-      <div class="card-head">
-        <div class="headline">Sell TSM $380.0 Put</div>
-        <div class="score" style="background:#b45309">67.3</div>
-      </div>
-      <div class="thesis">TSM trades at $417.17. Selling the $380.0 put (-0.2 delta, 24d to expiry) collects $637.50 in premium, a 25.5% annualized return on $38000.00 secured. Composite score 67.3/100 (technicals 79.0, IV 58.8, premium 73.1).</div>
-      <div class="details"><div class="row"><span class="label">Expiry</span><span class="val">2026-08-28 (24d)</span></div><div class="row"><span class="label">Delta</span><span class="val">-0.2</span></div><div class="row"><span class="label">Premium</span><span class="val">$637.50</span></div><div class="row"><span class="label">Cash Secured</span><span class="val">$38000.00</span></div><div class="row"><span class="label">Annualized Return</span><span class="val">25.5%</span></div><div class="row"><span class="label">Breakeven</span><span class="val">$373.62</span></div><div class="row"><span class="label">IV</span><span class="val">47.9%</span></div><div class="row"><span class="label">Open Interest</span><span class="val">611.0</span></div><div class="row"><span class="label">RSI (14d)</span><span class="val">49.2</span></div><div class="row"><span class="label">Above Support</span><span class="val">10.7%</span></div><div class="row"><span class="label">Bollinger %B</span><span class="val">0.58</span></div><div class="row"><span class="label">Bollinger Band Width</span><span class="val">15.1%</span></div><div class="row"><span class="label">vs Swing-High AVWAP (2026-06-30)</span><span class="val">-0.3%</span></div><div class="row"><span class="label">vs Swing-Low AVWAP (2025-08-20)</span><span class="val">+20.9%</span></div><div class="row"><span class="label">Next Earnings</span><span class="val">2026-10-14</span></div></div>
-      <div class="chips"><div class="chip">technicals: 79.0</div><div class="chip">iv: 58.8</div><div class="chip">premium: 73.1</div><div class="chip">risk: 40.3</div><div class="chip">catalyst: 85.0</div></div>
+      <div class="thesis">ARM trades at $280.56. Selling the $210.0 put (-0.14 delta, 44d to expiry) collects $785.00 in premium, a 31.0% annualized return on $21000.00 secured. Composite score 71.2/100 (technicals 68.0, IV 70.8, premium 88.4).</div>
+      <div class="details"><div class="row"><span class="label">Expiry</span><span class="val">2026-09-18 (44d)</span></div><div class="row"><span class="label">Delta</span><span class="val">-0.14</span></div><div class="row"><span class="label">Premium</span><span class="val">$785.00</span></div><div class="row"><span class="label">Cash Secured</span><span class="val">$21000.00</span></div><div class="row"><span class="label">Annualized Return</span><span class="val">31.0%</span></div><div class="row"><span class="label">Breakeven</span><span class="val">$202.15</span></div><div class="row"><span class="label">IV</span><span class="val">92.0%</span></div><div class="row"><span class="label">Open Interest</span><span class="val">1327.0</span></div><div class="row"><span class="label">RSI (14d)</span><span class="val">51.0</span></div><div class="row"><span class="label">Above Support</span><span class="val">28.4%</span></div><div class="row"><span class="label">Bollinger %B</span><span class="val">0.57</span></div><div class="row"><span class="label">Bollinger Band Width</span><span class="val">39.2%</span></div><div class="row"><span class="label">vs Swing-High AVWAP (2026-06-18)</span><span class="val">-12.5%</span></div><div class="row"><span class="label">vs Swing-Low AVWAP (2026-02-05)</span><span class="val">+13.8%</span></div><div class="row"><span class="label">Next Earnings</span><span class="val">2026-11-04</span></div></div>
+      <div class="chips"><div class="chip">technicals: 68.0</div><div class="chip">iv: 70.8</div><div class="chip">premium: 88.4</div><div class="chip">risk: 39.3</div><div class="chip">catalyst: 85.0</div></div>
     </div>
     </div>
     </section>
@@ -153,14 +195,14 @@
   
     <section>
       <h2>Leveraged ETF CSPs (Testing) <span class="count">(2)</span></h2>
-      <p class="section-note">Dedicated testing track for your leveraged-ETF CSP sleeve — shown daily, not gated behind an exceptional bar.</p>
+      <p class="section-note">Dedicated testing track for your leveraged-ETF CSP sleeve — shown daily.</p>
       <div class="cards">
     <div class="card">
       <div class="card-head">
         <div class="headline"><span class="badge">⚡ Leveraged ETF</span>Sell TQQQ $67.5 Put</div>
         <div class="score" style="background:#b45309">70.1</div>
       </div>
-      <div class="thesis">TQQQ's trend score of nan supports the long-dated $nan call (-0.18 delta, 9d), costing $nan with extrinsic value at nan% of the stock price. Composite score 70.1/100, cleared the exceptional-opportunity bar for LEAPs today.</div>
+      <div class="thesis">TQQQ (3.0x leveraged) trades at $74.82. Selling the $67.5 put (-0.18 delta, 9d to expiry) collects $103.00 in premium, a 61.9% annualized return on $6750.00 secured, est. 20.0% annual decay drag. Composite score 70.1/100 (technicals 97.0, IV 55.3, premium 93.4, risk 38.7).</div>
       <div class="details"><div class="row"><span class="label">Expiry</span><span class="val">2026-08-14 (9d)</span></div><div class="row"><span class="label">Delta</span><span class="val">-0.18</span></div><div class="row"><span class="label">Premium</span><span class="val">$103.00</span></div><div class="row"><span class="label">Cash Secured</span><span class="val">$6750.00</span></div><div class="row"><span class="label">Annualized Return</span><span class="val">61.9%</span></div><div class="row"><span class="label">Breakeven</span><span class="val">$66.47</span></div><div class="row"><span class="label">IV</span><span class="val">75.7%</span></div><div class="row"><span class="label">Open Interest</span><span class="val">203.0</span></div><div class="row"><span class="label">Leverage</span><span class="val">3.0x</span></div><div class="row"><span class="label">Est. Annual Decay</span><span class="val">20.0%</span></div><div class="row"><span class="label">RSI (14d)</span><span class="val">50.5</span></div><div class="row"><span class="label">Above Support</span><span class="val">23.0%</span></div><div class="row"><span class="label">Bollinger %B</span><span class="val">0.77</span></div><div class="row"><span class="label">Bollinger Band Width</span><span class="val">29.0%</span></div><div class="row"><span class="label">vs Swing-High AVWAP (2026-06-03)</span><span class="val">+2.3%</span></div><div class="row"><span class="label">vs Swing-Low AVWAP (2026-03-30)</span><span class="val">+11.6%</span></div><div class="row"><span class="label">Next Earnings</span><span class="val">nan</span></div></div>
       <div class="chips"><div class="chip">technicals: 97.0</div><div class="chip">iv: 55.3</div><div class="chip">premium: 93.4</div><div class="chip">risk: 38.7</div><div class="chip">catalyst: 85.0</div></div>
     </div>
@@ -170,7 +212,7 @@
         <div class="headline"><span class="badge">⚡ Leveraged ETF</span>Sell NEBX $11.0 Put</div>
         <div class="score" style="background:#b45309">65.9</div>
       </div>
-      <div class="thesis">NEBX's trend score of nan supports the long-dated $nan call (-0.04 delta, 16d), costing $nan with extrinsic value at nan% of the stock price. Composite score 65.9/100, cleared the exceptional-opportunity bar for LEAPs today.</div>
+      <div class="thesis">NEBX (3.0x leveraged) trades at $29.92. Selling the $11.0 put (-0.04 delta, 16d to expiry) collects $47.50 in premium, a 98.5% annualized return on $1100.00 secured, est. 346.5% annual decay drag. Composite score 65.9/100 (technicals 72.0, IV 51.9, premium 99.9, risk 37.0).</div>
       <div class="details"><div class="row"><span class="label">Expiry</span><span class="val">2026-08-21 (16d)</span></div><div class="row"><span class="label">Delta</span><span class="val">-0.04</span></div><div class="row"><span class="label">Premium</span><span class="val">$47.50</span></div><div class="row"><span class="label">Cash Secured</span><span class="val">$1100.00</span></div><div class="row"><span class="label">Annualized Return</span><span class="val">98.5%</span></div><div class="row"><span class="label">Breakeven</span><span class="val">$10.53</span></div><div class="row"><span class="label">IV</span><span class="val">334.8%</span></div><div class="row"><span class="label">Open Interest</span><span class="val">1004.0</span></div><div class="row"><span class="label">Leverage</span><span class="val">3.0x</span></div><div class="row"><span class="label">Est. Annual Decay</span><span class="val">346.5%</span></div><div class="row"><span class="label">RSI (14d)</span><span class="val">51.6</span></div><div class="row"><span class="label">Above Support</span><span class="val">55.6%</span></div><div class="row"><span class="label">Bollinger %B</span><span class="val">0.65</span></div><div class="row"><span class="label">Bollinger Band Width</span><span class="val">79.8%</span></div><div class="row"><span class="label">vs Swing-High AVWAP (2026-06-22)</span><span class="val">+1.1%</span></div><div class="row"><span class="label">vs Swing-Low AVWAP (2026-02-05)</span><span class="val">+22.7%</span></div><div class="row"><span class="label">Next Earnings</span><span class="val">nan</span></div></div>
       <div class="chips"><div class="chip">technicals: 72.0</div><div class="chip">iv: 51.9</div><div class="chip">premium: 99.9</div><div class="chip">risk: 37.0</div><div class="chip">catalyst: 85.0</div></div>
     </div>
@@ -180,11 +222,45 @@
   
     <section>
       <h2>Top Spreads (Testing) <span class="count">(0)</span></h2>
-      <p class="section-note">Dedicated testing track for spreads — shown daily, not gated behind an exceptional bar.</p>
+      <p class="section-note">Dedicated testing track for spreads — shown daily.</p>
       <div class="cards"><p class="empty">No spreads cleared the 65+ threshold today.</p></div>
     </section>
     
   
+    <section>
+      <h2>Top LEAPs (Testing) <span class="count">(2)</span></h2>
+      <p class="section-note">Dedicated testing track for LEAPs — shown daily.</p>
+      <div class="cards">
+    <div class="card">
+      <div class="card-head">
+        <div class="headline"><span class="badge">📈 LEAPS</span>Buy MAGS $54.0 Call (LEAPS)</div>
+        <div class="score" style="background:#b45309">69.7</div>
+      </div>
+      <div class="thesis">MAGS's trend score of 94.0 supports the long-dated $54.0 call (0.81 delta, 534d), costing $2010.00 with extrinsic value at 7.5% of the stock price. Composite score 69.7/100, cleared the exceptional-opportunity bar for LEAPs today.</div>
+      <div class="details"><div class="row"><span class="label">Expiry</span><span class="val">2028-01-21 (534d)</span></div><div class="row"><span class="label">Delta</span><span class="val">0.81</span></div><div class="row"><span class="label">Cost/Contract</span><span class="val">$2010.00</span></div><div class="row"><span class="label">Extrinsic % of Price</span><span class="val">7.5%</span></div><div class="row"><span class="label">Breakeven</span><span class="val">$74.10</span></div><div class="row"><span class="label">Leverage Ratio</span><span class="val">2.8</span></div><div class="row"><span class="label">Trend Score</span><span class="val">94.0</span></div><div class="row"><span class="label">RSI (14d)</span><span class="val">49.8</span></div><div class="row"><span class="label">Above Support</span><span class="val">11.9%</span></div><div class="row"><span class="label">Bollinger %B</span><span class="val">0.84</span></div><div class="row"><span class="label">Bollinger Band Width</span><span class="val">12.2%</span></div><div class="row"><span class="label">vs Swing-High AVWAP (2026-05-14)</span><span class="val">+4.2%</span></div><div class="row"><span class="label">vs Swing-Low AVWAP (2026-03-30)</span><span class="val">+5.5%</span></div><div class="row"><span class="label">Next Earnings</span><span class="val">nan</span></div></div>
+      <div class="chips"><div class="chip">technicals: 100.0</div><div class="chip">iv: 19.7</div><div class="chip">premium: 50.0</div><div class="chip">risk: 70.0</div><div class="chip">catalyst: 85.0</div></div>
+    </div>
+    
+    <div class="card">
+      <div class="card-head">
+        <div class="headline"><span class="badge">📈 LEAPS</span>Buy GGLL $80.0 Call (LEAPS)</div>
+        <div class="score" style="background:#b45309">68.1</div>
+      </div>
+      <div class="thesis">GGLL's trend score of 92.0 supports the long-dated $80.0 call (0.85 delta, 534d), costing $5830.00 with extrinsic value at 12.0% of the stock price. Composite score 68.1/100, cleared the exceptional-opportunity bar for LEAPs today.</div>
+      <div class="details"><div class="row"><span class="label">Expiry</span><span class="val">2028-01-21 (534d)</span></div><div class="row"><span class="label">Delta</span><span class="val">0.85</span></div><div class="row"><span class="label">Cost/Contract</span><span class="val">$5830.00</span></div><div class="row"><span class="label">Extrinsic % of Price</span><span class="val">12.0%</span></div><div class="row"><span class="label">Breakeven</span><span class="val">$138.30</span></div><div class="row"><span class="label">Leverage Ratio</span><span class="val">1.8</span></div><div class="row"><span class="label">Trend Score</span><span class="val">92.0</span></div><div class="row"><span class="label">RSI (14d)</span><span class="val">51.1</span></div><div class="row"><span class="label">Above Support</span><span class="val">29.7%</span></div><div class="row"><span class="label">Bollinger %B</span><span class="val">0.89</span></div><div class="row"><span class="label">Bollinger Band Width</span><span class="val">33.9%</span></div><div class="row"><span class="label">vs Swing-High AVWAP (2026-05-18)</span><span class="val">+8.1%</span></div><div class="row"><span class="label">vs Swing-Low AVWAP (2025-08-06)</span><span class="val">+34.5%</span></div><div class="row"><span class="label">Next Earnings</span><span class="val">nan</span></div></div>
+      <div class="chips"><div class="chip">technicals: 100.0</div><div class="chip">iv: 49.4</div><div class="chip">premium: 20.0</div><div class="chip">risk: 50.0</div><div class="chip">catalyst: 85.0</div></div>
+    </div>
+    </div>
+    </section>
+    
 </main>
+<script>
+  function toggleTheme() {
+    var current = document.documentElement.getAttribute('data-theme');
+    var next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('wheelhouse-theme', next);
+  }
+</script>
 </body>
 </html>
