@@ -14,6 +14,8 @@ def find_leaps_candidates(ticker, snapshot, hist, next_earnings, earnings_status
                            screen=SCREEN):
     ideas = []
     bucket = bucket_of(ticker)
+    if bucket == "leveraged_etf":
+        return []  # long-dated exposure to daily-reset decay compounds badly -- not appropriate here
 
     if trend_diag["trend_score"] < screen["leaps_min_trend_score"]:
         return ideas  # only pursue LEAPS on names with a real uptrend

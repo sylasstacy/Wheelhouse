@@ -19,6 +19,11 @@ def _build_spread(short_row, long_row, option_type, contract_mult=100):
     width = abs(short_row["strike"] - long_row["strike"]) * contract_mult
     if width <= 0 or credit <= 0:
         return None
+    if credit > width:
+        # Impossible for a real vertical spread -- a spread can never be worth
+        # more than its width. This signals bad/stale quote data on one leg
+        # (common on illiquid, wide-quoted contracts), not a real opportunity.
+        return None
     max_loss = width - credit
     max_gain = credit
     credit_to_width_pct = credit / width * 100
@@ -33,6 +38,9 @@ def find_spread_candidates(ticker, snapshot, hist, next_earnings, earnings_statu
     """
     ideas = []
     bucket = bucket_of(ticker)
+    if bucket == "leveraged_etf":
+        return []  # leveraged ETFs are CSP-only here -- see leveraged_csp.py
+
     min_dte, max_dte = screen["spread_min_dte"], screen["spread_max_dte"]
 
     option_type = "put" if trend_score >= 50 else "call"
@@ -78,6 +86,8 @@ def find_spread_candidates(ticker, snapshot, hist, next_earnings, earnings_statu
         for _, short_row in short_candidates.iterrows():
             if short_row["open_interest"] < screen["min_option_open_interest"]:
                 continue
+            if pd.isna(short_row["spread_pct"]) or short_row["spread_pct"] > screen["max_bid_ask_spread_pct"]:
+                continue
             funnel["passed_short_leg_oi"] += 1
 
             # long leg: next strike further OTM (lower strike for puts, higher for calls)
@@ -89,6 +99,8 @@ def find_spread_candidates(ticker, snapshot, hist, next_earnings, earnings_statu
 
             long_row = chain.iloc[long_idx]
             if long_row["open_interest"] < screen["min_option_open_interest"]:
+                continue
+            if pd.isna(long_row["spread_pct"]) or long_row["spread_pct"] > screen["max_bid_ask_spread_pct"]:
                 continue
             funnel["passed_long_leg_oi"] += 1
 
