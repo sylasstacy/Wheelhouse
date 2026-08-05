@@ -7,10 +7,9 @@ GitHub Pages.
 Report composition (your style, set in config.py):
   - Core: best REPORT_CSP_COUNT cash-secured puts, excluding leveraged ETFs
   - Leveraged ETF CSPs: best REPORT_LEVERAGED_CSP_COUNT, shown daily as a
-    dedicated testing track (not gated behind the exceptional bar)
-  - Spreads: best REPORT_SPREAD_COUNT, shown daily as a dedicated testing
-    track (not gated behind the exceptional bar)
-  - LEAPs: purely opportunistic -- only shown if score >= REPORT_EXCEPTIONAL_THRESHOLD
+    dedicated testing track
+  - Spreads: best REPORT_SPREAD_COUNT, shown daily as a dedicated testing track
+  - LEAPs: best REPORT_LEAPS_COUNT, shown daily as a dedicated testing track
   - Every idea gets an AI-written thesis (see thesis.py), with a safe
     template fallback if no API key is configured.
 
@@ -27,8 +26,7 @@ from config import (
     REPORT_CSP_COUNT,
     REPORT_LEVERAGED_CSP_COUNT,
     REPORT_SPREAD_COUNT,
-    REPORT_EXCEPTIONAL_THRESHOLD,
-    REPORT_MAX_BONUS_IDEAS,
+    REPORT_LEAPS_COUNT,
     MIN_SCORE_TO_REPORT,
     LEVERAGED_ETF_PAIRS,
 )
@@ -72,11 +70,10 @@ def _suppress_weaker_pair(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _select_daily_ideas(results: dict):
-    """Returns (core_csps, leveraged_csps, top_spreads, bonus_leaps) per
-    your reporting style: core CSPs exclude leveraged ETFs entirely (they
-    now route through their own dedicated strategy/screener), spreads are
-    shown daily as a testing track, and LEAPs stay purely opportunistic
-    (exceptional-only)."""
+    """Returns (core_csps, leveraged_csps, top_spreads, top_leaps) per your
+    reporting style: core CSPs exclude leveraged ETFs entirely (they route
+    through their own dedicated strategy/screener), leveraged CSPs/spreads/
+    LEAPs are all shown daily as testing tracks."""
     csp_df = results["csp"]
     core = csp_df.sort_values("composite_score", ascending=False).head(REPORT_CSP_COUNT) \
         if not csp_df.empty else csp_df
@@ -94,13 +91,10 @@ def _select_daily_ideas(results: dict):
         if not spread_df.empty else spread_df
 
     leaps_df = results["leaps"]
-    if leaps_df.empty:
-        bonus_leaps = leaps_df
-    else:
-        exceptional = leaps_df[leaps_df["composite_score"] >= REPORT_EXCEPTIONAL_THRESHOLD]
-        bonus_leaps = exceptional.sort_values("composite_score", ascending=False).head(REPORT_MAX_BONUS_IDEAS)
+    top_leaps = leaps_df.sort_values("composite_score", ascending=False).head(REPORT_LEAPS_COUNT) \
+        if not leaps_df.empty else leaps_df
 
-    return core, leveraged_csps, top_spreads, bonus_leaps
+    return core, leveraged_csps, top_spreads, top_leaps
 
 
 def _headline(idea: dict) -> str:
@@ -249,12 +243,12 @@ def _section(title: str, df: pd.DataFrame, empty_msg: str, note: str = None, bad
 def generate_report():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     results = run_pipeline(verbose=True)
-    core, leveraged_csps, top_spreads, bonus_leaps = _select_daily_ideas(results)
+    core, leveraged_csps, top_spreads, top_leaps = _select_daily_ideas(results)
 
     now = dt.datetime.now().strftime("%A, %B %d %Y — %I:%M %p")
 
     core_count = 0 if core.empty else len(core)
-    all_frames = [df for df in [core, leveraged_csps, top_spreads, bonus_leaps] if not df.empty]
+    all_frames = [df for df in [core, leveraged_csps, top_spreads, top_leaps] if not df.empty]
     total_shown = sum(len(df) for df in all_frames)
     avg_score = round(pd.concat([df["composite_score"] for df in all_frames]).mean(), 1) \
         if all_frames else None
@@ -265,22 +259,22 @@ def generate_report():
     )
     leveraged_section = _section(
         "Leveraged ETF CSPs (Testing)", leveraged_csps,
-        f"No leveraged ETF CSPs cleared the {MIN_SCORE_TO_REPORT['csp']}+ threshold today.",
-        note="Dedicated testing track for your leveraged-ETF CSP sleeve — shown daily, not gated behind an exceptional bar.",
+        f"No leveraged ETF CSPs cleared the {MIN_SCORE_TO_REPORT['leveraged_csp']}+ threshold today.",
+        note="Dedicated testing track for your leveraged-ETF CSP sleeve — shown daily.",
         badge_fn=lambda row: "⚡ Leveraged ETF"
     )
     spread_section = _section(
         "Top Spreads (Testing)", top_spreads,
         f"No spreads cleared the {MIN_SCORE_TO_REPORT['spread']}+ threshold today.",
-        note="Dedicated testing track for spreads — shown daily, not gated behind an exceptional bar.",
+        note="Dedicated testing track for spreads — shown daily.",
         badge_fn=lambda row: "📐 Spread"
     )
-    bonus_section = _section(
-        "Bonus: Exceptional LEAPs", bonus_leaps,
-        f"No LEAPs cleared the {REPORT_EXCEPTIONAL_THRESHOLD}+ bar today.",
-        note=f"LEAPs that cleared the {REPORT_EXCEPTIONAL_THRESHOLD}+ bar today — purely opportunistic.",
-        badge_fn=lambda row: "⭐ LEAPS"
-    ) if not bonus_leaps.empty else ""
+    leaps_section = _section(
+        "Top LEAPs (Testing)", top_leaps,
+        f"No LEAPs cleared the {MIN_SCORE_TO_REPORT['leaps']}+ threshold today.",
+        note="Dedicated testing track for LEAPs — shown daily.",
+        badge_fn=lambda row: "📈 LEAPS"
+    )
 
     stats_html = ""
     if avg_score is not None:
@@ -300,6 +294,13 @@ def generate_report():
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wheelhouse — Daily Report</title>
+<script>
+  (function() {{
+    var stored = localStorage.getItem('wheelhouse-theme');
+    var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+  }})();
+</script>
 <style>
   :root {{
     color-scheme: light;
@@ -310,6 +311,32 @@ def generate_report():
     --border: #e8e9ec;
     --accent: #4f46e5;
     --accent-soft: #eef0ff;
+    --thesis-bg: #f9fafb;
+    --thesis-ink: #374151;
+    --chip-bg: #f3f4f6;
+    --chip-ink: #4b5563;
+    --row-border: #f3f4f6;
+    --disclaimer-bg: #fffbeb;
+    --disclaimer-border: #fde68a;
+    --disclaimer-ink: #92610a;
+  }}
+  :root[data-theme="dark"] {{
+    color-scheme: dark;
+    --bg: #0f1115;
+    --ink: #e5e7eb;
+    --muted: #9ca3af;
+    --card: #181b21;
+    --border: #2a2e37;
+    --accent: #818cf8;
+    --accent-soft: #262a4a;
+    --thesis-bg: #1c1f26;
+    --thesis-ink: #d1d5db;
+    --chip-bg: #23262e;
+    --chip-ink: #b8bcc4;
+    --row-border: #262a33;
+    --disclaimer-bg: #2a2410;
+    --disclaimer-border: #4a3f14;
+    --disclaimer-ink: #e8c766;
   }}
   * {{ box-sizing: border-box; }}
   body {{
@@ -322,14 +349,20 @@ def generate_report():
   }}
   h1 {{ font-size: 26px; margin: 0 0 4px; letter-spacing: -0.02em; }}
   .timestamp {{ color: var(--muted); font-size: 13px; }}
+  .header-right {{ display: flex; align-items: center; gap: 20px; }}
+  .theme-toggle {{
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 11px; cursor: pointer; font-size: 15px; color: var(--ink); line-height: 1;
+  }}
+  .theme-toggle:hover {{ border-color: var(--accent); }}
   .stats {{ display: flex; gap: 24px; }}
   .stat {{ text-align: center; }}
   .stat-num {{ font-size: 22px; font-weight: 700; color: var(--accent); }}
   .stat-label {{ font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }}
   .disclaimer {{
     max-width: 1100px; margin: 0 auto 28px; padding: 12px 16px;
-    background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px;
-    font-size: 12.5px; color: #92610a; line-height: 1.5;
+    background: var(--disclaimer-bg); border: 1px solid var(--disclaimer-border); border-radius: 10px;
+    font-size: 12.5px; color: var(--disclaimer-ink); line-height: 1.5;
   }}
   main {{ max-width: 1100px; margin: 0 auto; }}
   section {{ margin-bottom: 36px; }}
@@ -355,16 +388,16 @@ def generate_report():
     border-radius: 20px; flex-shrink: 0;
   }}
   .thesis {{
-    font-size: 13px; line-height: 1.55; color: #374151; background: #f9fafb;
+    font-size: 13px; line-height: 1.55; color: var(--thesis-ink); background: var(--thesis-bg);
     border-left: 3px solid var(--accent); padding: 10px 13px; margin-bottom: 14px;
     border-radius: 0 8px 8px 0;
   }}
-  .row {{ display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f3f4f6; }}
+  .row {{ display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--row-border); }}
   .row:last-child {{ border-bottom: none; }}
   .label {{ color: var(--muted); }}
   .val {{ font-weight: 600; }}
   .chips {{ margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }}
-  .chip {{ background: #f3f4f6; border-radius: 6px; padding: 3px 9px; font-size: 10.5px; color: #4b5563; font-weight: 500; }}
+  .chip {{ background: var(--chip-bg); border-radius: 6px; padding: 3px 9px; font-size: 10.5px; color: var(--chip-ink); font-weight: 500; }}
 </style>
 </head>
 <body>
@@ -373,7 +406,10 @@ def generate_report():
     <h1>🎡 Wheelhouse</h1>
     <div class="timestamp">Generated {now}</div>
   </div>
-  {stats_html}
+  <div class="header-right">
+    {stats_html}
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">🌙</button>
+  </div>
 </header>
 <div class="disclaimer">
   Informational only, not investment advice. Greeks are Black-Scholes estimates;
@@ -384,8 +420,16 @@ def generate_report():
   {core_section}
   {leveraged_section}
   {spread_section}
-  {bonus_section}
+  {leaps_section}
 </main>
+<script>
+  function toggleTheme() {{
+    var current = document.documentElement.getAttribute('data-theme');
+    var next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('wheelhouse-theme', next);
+  }}
+</script>
 </body>
 </html>"""
 
