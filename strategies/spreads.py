@@ -26,7 +26,7 @@ def _build_spread(short_row, long_row, option_type, contract_mult=100):
 
 
 def find_spread_candidates(ticker, snapshot, hist, next_earnings, earnings_status, trend_score,
-                            screen=SCREEN):
+                            screen=SCREEN, verbose=False):
     """
     trend_score: 0-100 technical score, used to decide put-credit (bullish/
     neutral bias, trend_score >= 50) vs call-credit (bearish bias, < 50).
@@ -39,11 +39,25 @@ def find_spread_candidates(ticker, snapshot, hist, next_earnings, earnings_statu
     direction_label = "bullish/neutral (put credit spread)" if option_type == "put" \
         else "bearish/neutral (call credit spread)"
 
+    # Funnel counters -- how many candidates survive each stage, for diagnostics
+    funnel = {
+        "expirations_checked": 0,
+        "expirations_in_dte_window": 0,
+        "short_candidates_in_delta_band": 0,
+        "passed_short_leg_oi": 0,
+        "valid_long_leg_found": 0,
+        "passed_long_leg_oi": 0,
+        "passed_width_check": 0,
+        "passed_credit_width_ratio": 0,
+    }
+
     for expiry in snapshot.expirations:
+        funnel["expirations_checked"] += 1
         exp_date = dt.datetime.strptime(expiry, "%Y-%m-%d").date()
         dte = (exp_date - dt.date.today()).days
         if not (min_dte <= dte <= max_dte):
             continue
+        funnel["expirations_in_dte_window"] += 1
 
         chain = snapshot.chains[expiry]["puts" if option_type == "put" else "calls"]
         if chain.empty:
@@ -55,23 +69,32 @@ def find_spread_candidates(ticker, snapshot, hist, next_earnings, earnings_statu
         short_candidates = chain[(chain["delta"].abs() >= lo) & (chain["delta"].abs() <= hi)]
         if short_candidates.empty:
             continue
+        funnel["short_candidates_in_delta_band"] += len(short_candidates)
 
+        # max_width is a DOLLAR value (underlying_price x pct_of_price / 100) --
+        # compare strike spacing directly against it, no further division.
         max_width = snapshot.underlying_price * screen["spread_max_width_pct_of_price"] / 100
 
         for _, short_row in short_candidates.iterrows():
             if short_row["open_interest"] < screen["min_option_open_interest"]:
                 continue
+            funnel["passed_short_leg_oi"] += 1
+
             # long leg: next strike further OTM (lower strike for puts, higher for calls)
-            strikes = chain["strike"].values
             idx = chain.index[chain["strike"] == short_row["strike"]][0]
             long_idx = idx - 1 if option_type == "put" else idx + 1
             if long_idx < 0 or long_idx >= len(chain):
                 continue
+            funnel["valid_long_leg_found"] += 1
+
             long_row = chain.iloc[long_idx]
             if long_row["open_interest"] < screen["min_option_open_interest"]:
                 continue
-            if abs(short_row["strike"] - long_row["strike"]) > max_width / 100:
+            funnel["passed_long_leg_oi"] += 1
+
+            if abs(short_row["strike"] - long_row["strike"]) > max_width:
                 continue
+            funnel["passed_width_check"] += 1
 
             result = _build_spread(short_row, long_row, option_type)
             if not result:
@@ -79,6 +102,7 @@ def find_spread_candidates(ticker, snapshot, hist, next_earnings, earnings_statu
             credit, width, max_loss, max_gain, credit_to_width_pct = result
             if credit_to_width_pct < screen["spread_min_credit_to_width_pct"]:
                 continue
+            funnel["passed_credit_width_ratio"] += 1
 
             ideas.append({
                 "strategy": "spread",
@@ -100,5 +124,8 @@ def find_spread_candidates(ticker, snapshot, hist, next_earnings, earnings_statu
                 "next_earnings": str(next_earnings) if next_earnings else None,
                 "earnings_status": earnings_status,
             })
+
+    if verbose:
+        print(f"    [spreads:{ticker}] funnel: {funnel}")
 
     return ideas
