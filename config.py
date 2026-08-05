@@ -253,8 +253,7 @@ MAX_IDEAS_PER_STRATEGY = 8
 REPORT_CSP_COUNT = 5
 REPORT_LEVERAGED_CSP_COUNT = 2   # top leveraged-ETF CSPs shown daily (testing track)
 REPORT_SPREAD_COUNT = 2          # top spreads shown daily (testing track)
-REPORT_EXCEPTIONAL_THRESHOLD = 85   # LEAPs need this score to make the cut
-REPORT_MAX_BONUS_IDEAS = 3          # cap on how many bonus LEAP ideas per day
+REPORT_LEAPS_COUNT = 2           # top LEAPs shown daily (testing track)
 
 
 # ---------------------------------------------------------------------------
