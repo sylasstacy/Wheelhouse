@@ -32,6 +32,14 @@ jobs:
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
         run: python report.py
 
+      - name: Resolve outcomes for expired ideas
+        env:
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+        run: python resolve_outcomes.py
+
+      - name: Generate history page
+        run: python history.py
+
       - name: Send Slack notification (optional)
         if: env.SLACK_WEBHOOK_URL != ''
         env:
@@ -45,6 +53,7 @@ jobs:
         run: |
           git config user.name "wheelhouse-bot"
           git config user.email "actions@github.com"
-          git add docs/index.html
+          git add docs/index.html docs/history.html wheelhouse.db
           git diff --quiet && git diff --staged --quiet || git commit -m "Daily scan: $(date -u +'%Y-%m-%d')"
+          git pull --rebase origin main
           git push
