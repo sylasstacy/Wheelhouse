@@ -13,10 +13,14 @@ Import `run_pipeline()` from dashboard.py for the interactive version.
 
 from __future__ import annotations
 import sys
+import datetime as dt
 import traceback
 import pandas as pd
 
-from config import all_tickers, SCREEN, MIN_SCORE_TO_REPORT, MAX_IDEAS_PER_STRATEGY
+from config import (
+    all_tickers, SCREEN, MIN_SCORE_TO_REPORT, MAX_IDEAS_PER_STRATEGY,
+    EARNINGS_POST_REPORT_BUFFER_DAYS,
+)
 import data_fetch
 import technicals
 import iv_metrics
@@ -46,6 +50,15 @@ def analyze_ticker(ticker: str, verbose: bool = False) -> list[dict]:
             return []
 
         next_earnings, earnings_status = data_fetch.get_next_earnings_date(ticker)
+        recent_earnings = data_fetch.get_recent_earnings_date(ticker)
+
+        if recent_earnings:
+            days_since = (dt.date.today() - recent_earnings).days
+            if 0 <= days_since <= EARNINGS_POST_REPORT_BUFFER_DAYS:
+                if verbose:
+                    print(f"  {ticker}: skipped, reported earnings {recent_earnings} "
+                          f"(within the {EARNINGS_POST_REPORT_BUFFER_DAYS}-day post-report buffer)")
+                return []
 
         # IV metrics off the nearest ~30-45 DTE expiration as a representative read
         rep_expiry = snapshot.expirations[min(2, len(snapshot.expirations) - 1)]
@@ -62,6 +75,7 @@ def analyze_ticker(ticker: str, verbose: bool = False) -> list[dict]:
         for idea in raw_ideas:
             idea["trend_diagnostics"] = trend_diag
             idea["iv_diagnostics"] = iv_rank_data
+            idea["recent_earnings_date"] = str(recent_earnings) if recent_earnings else None
             scored = score_idea(idea, trend_diag, iv_rank_data)
             ideas.append(scored)
 
@@ -99,6 +113,16 @@ def run_pipeline(tickers=None, verbose=True) -> dict:
     df = pd.DataFrame(all_ideas)
     if df.empty:
         return {"csp": df, "leveraged_csp": df, "spread": df, "leaps": df, "all": df}
+
+    # pandas turns None into float NaN when building a DataFrame from a list
+    # of dicts -- and NaN is truthy in Python, unlike None, which broke every
+    # "if idea.get('next_earnings')" check downstream (displayed the literal
+    # string "nan" instead of the intended fallback text). Cast to plain
+    # object dtype first -- pandas' newer default string dtype silently
+    # discards a bare None and reverts to its own NaN marker otherwise.
+    for col in ("next_earnings", "recent_earnings_date"):
+        if col in df.columns:
+            df[col] = df[col].astype(object).where(df[col].notna(), None)
 
     df["composite_score"] = df["scores"].apply(lambda s: s["composite"])
 

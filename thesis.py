@@ -10,6 +10,7 @@ to a deterministic template-based thesis so the daily report never breaks.
 
 from __future__ import annotations
 import os
+import pandas as pd
 from config import THESIS_MODEL, THESIS_MAX_TOKENS
 from scoring import estimate_annual_decay_pct
 
@@ -75,6 +76,9 @@ def _build_prompt(idea: dict) -> str:
     trend = idea.get("trend_diagnostics", {})
     iv = idea.get("iv_diagnostics", {})
 
+    next_earnings = idea.get("next_earnings")
+    if isinstance(next_earnings, float) and pd.isna(next_earnings):
+        next_earnings = None
     base_facts = (
         f"Strategy: {strategy}\n"
         f"Ticker: {idea['ticker']} (universe bucket: {idea['bucket']})\n"
@@ -85,7 +89,7 @@ def _build_prompt(idea: dict) -> str:
         f"risk {s['risk']}, catalyst {s['catalyst']})\n"
         f"Trend diagnostics: {trend}\n"
         f"IV diagnostics: {iv}\n"
-        f"Next earnings: {idea.get('next_earnings') or ('unconfirmed/unavailable, not a confirmed absence' if idea.get('earnings_status') == 'unavailable' else 'none scheduled')}\n"
+        f"Next earnings: {next_earnings or ('unconfirmed/unavailable, not a confirmed absence' if idea.get('earnings_status') == 'unavailable' else 'none scheduled')}\n"
     )
 
     if strategy == "csp":

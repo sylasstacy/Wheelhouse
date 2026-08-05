@@ -159,3 +159,34 @@ def _get_next_earnings_date_yfinance(ticker: str):
         return future.index[0].date(), "confirmed"
     except Exception:
         return None, "unavailable"
+
+
+def get_recent_earnings_date(ticker: str, lookback_days: int = 5):
+    """
+    Returns the most recent PAST earnings date within `lookback_days`, or None.
+    This exists specifically to catch "just reported -- still digesting the
+    move" risk that a forward-only earnings lookup can never see (a stock
+    that reported yesterday shows the SAME "next earnings in 3 months" as one
+    that reported six months ago, even though their near-term risk is nothing
+    alike). Best-effort supplementary signal, Finnhub-only (no yfinance
+    fallback) -- returns None rather than raising if unavailable.
+    """
+    api_key = os.environ.get("FINNHUB_API_KEY")
+    if not api_key:
+        return None
+    try:
+        today = dt.date.today()
+        start = today - dt.timedelta(days=lookback_days)
+        url = (
+            "https://finnhub.io/api/v1/calendar/earnings"
+            f"?symbol={ticker}&from={start.isoformat()}&to={today.isoformat()}&token={api_key}"
+        )
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        events = resp.json().get("earningsCalendar", [])
+        dates = sorted((e["date"] for e in events if e.get("date")), reverse=True)
+        if not dates:
+            return None
+        return dt.datetime.strptime(dates[0], "%Y-%m-%d").date()
+    except Exception:
+        return None

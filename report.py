@@ -107,8 +107,9 @@ def _headline(idea: dict) -> str:
 
 
 def _earnings_display(idea: dict) -> str:
-    if idea.get("next_earnings"):
-        return idea["next_earnings"]
+    val = idea.get("next_earnings")
+    if val and not (isinstance(val, float) and pd.isna(val)):
+        return val
     if idea.get("earnings_status") == "unavailable":
         return "unconfirmed (data unavailable — check manually)"
     return "none scheduled"

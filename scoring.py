@@ -27,6 +27,7 @@ from config import (
     LEVERAGED_CSP_PREMIUM_RAW_RETURN_WEIGHT,
     LEVERAGED_CSP_RISK_WEIGHTS,
     LEVERAGED_CSP_DECAY_TARGET_PCT,
+    EARNINGS_POST_REPORT_BUFFER_DAYS,
 )
 
 
@@ -265,11 +266,23 @@ def score_risk(idea: dict, strategy: str) -> float:
 
 def score_catalyst(idea: dict, days_to_expiry_field="dte") -> float:
     """
-    Penalize earnings ONLY if they fall inside this specific trade's life
-    (today through expiry). If the contract expires before earnings happens,
-    there's no post-earnings gap to be exposed to during the trade -- so
-    earnings landing after expiry isn't treated as a caution, full stop.
+    Penalize earnings if they fall inside this specific trade's life (today
+    through expiry) -- OR if the stock JUST reported within the configured
+    post-report buffer (default: today + the following session). A forward-
+    only check would show a stock that reported yesterday as having "no
+    earnings for 3 months," which is technically true but useless -- the
+    stock is still digesting a fresh, live catalyst right now.
     """
+    recent = idea.get("recent_earnings_date")
+    if recent:
+        try:
+            recent_date = dt.datetime.strptime(recent, "%Y-%m-%d").date()
+            days_since = (dt.date.today() - recent_date).days
+            if 0 <= days_since <= EARNINGS_POST_REPORT_BUFFER_DAYS:
+                return 20.0  # just reported -- still digesting the move
+        except Exception:
+            pass
+
     if not idea.get("next_earnings"):
         # Distinguish "confirmed nothing coming up" from "couldn't confirm" --
         # the latter deserves mild caution, not full confidence.
