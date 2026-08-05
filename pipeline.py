@@ -56,7 +56,7 @@ def analyze_ticker(ticker: str, verbose: bool = False) -> list[dict]:
         raw_ideas += find_csp_candidates(ticker, snapshot, hist, next_earnings, earnings_status)
         raw_ideas += find_leveraged_csp_candidates(ticker, snapshot, hist, next_earnings, earnings_status)
         raw_ideas += find_spread_candidates(ticker, snapshot, hist, next_earnings, earnings_status,
-                                             trend_diag["trend_score"])
+                                             trend_diag["trend_score"], verbose=verbose)
         raw_ideas += find_leaps_candidates(ticker, snapshot, hist, next_earnings, earnings_status, trend_diag)
 
         for idea in raw_ideas:
