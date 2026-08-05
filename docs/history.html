@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wheelhouse — History</title>
+<script>
+  (function() {
+    var stored = localStorage.getItem('wheelhouse-theme');
+    var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+  })();
+</script>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f4f5f7; --ink: #1a1d23; --muted: #6b7280; --card: #ffffff;
+    --border: #e8e9ec; --accent: #4f46e5; --row-hover: #f9fafb;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0f1115; --ink: #e5e7eb; --muted: #9ca3af; --card: #181b21;
+    --border: #2a2e37; --accent: #818cf8; --row-hover: #1c1f26;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--ink); margin: 0; padding: 32px 20px;
+  }
+  header { max-width: 1100px; margin: 0 auto 20px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; }
+  h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.02em; }
+  .subtitle { color: var(--muted); font-size: 13px; }
+  .nav-link { color: var(--accent); text-decoration: none; font-size: 13px; font-weight: 600; }
+  .stats { display: flex; gap: 24px; }
+  .stat { text-align: center; }
+  .stat-num { font-size: 22px; font-weight: 700; color: var(--accent); }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  main { max-width: 1100px; margin: 0 auto; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--border); }
+  tr:hover td { background: var(--row-hover); }
+  tr:last-child td { border-bottom: none; }
+  .ticker { font-weight: 700; }
+  .outcome { font-weight: 600; text-transform: capitalize; }
+  .pnl { font-size: 11px; color: var(--muted); }
+  .pending { color: var(--muted); font-style: italic; }
+  .empty { text-align: center; color: var(--muted); font-style: italic; padding: 30px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🎡 Wheelhouse — History</h1>
+    <div class="subtitle">Every idea shown in the last 60 days · <a class="nav-link" href="index.html">← Back to today's report</a></div>
+  </div>
+  
+        <div class="stats">
+          <div class="stat"><div class="stat-num">10</div><div class="stat-label">Ideas Logged</div></div>
+          <div class="stat"><div class="stat-num">0</div><div class="stat-label">Resolved</div></div>
+          <div class="stat"><div class="stat-num">—</div><div class="stat-label">Win Rate</div></div>
+        </div>
+        
+</header>
+<main>
+  <table>
+    <thead>
+      <tr><th>Date</th><th>Strategy</th><th>Ticker</th><th>Rank</th><th>Score</th><th>Expiry</th><th>Outcome</th></tr>
+    </thead>
+    <tbody>
+      
+    <tr>
+      <td>2026-08-05</td>
+      <td>CSP</td>
+      <td class="ticker">BE</td>
+      <td>#1</td>
+      <td>76.8</td>
+      <td>2026-09-18</td>
+      <td><span class="pending">pending (not yet expired)</span></td>
+    </tr>
+    
+    <tr>
+      <td>2026-08-05</td>
+      <td>CSP</td>
+      <td class="ticker">INTC</td>
+      <td>#2</td>
+      <td>75.8</td>
+      <td>2026-08-28</td>
+      <td><span class="pending">pending (not yet expired)</span></td>
+    </tr>
+    
+    <tr>
+      <td>2026-08-05</td>
+      <td>CSP</td>
+      <td class="ticker">ARM</td>
+      <td>#3</td>
+      <td>71.2</td>
+      <td>2026-09-18</td>
+      <td><span class="pending">pending (not yet expired)</span></td>
+    </tr>
+    
+    <tr>
+      <td>2026-08-05</td>
+      <td>CSP</td>
+      <td class="ticker">NOW</td>
+      <td>#4</td>
+      <td>69.3</td>
+      <td>2026-08-28</td>
+      <td><span class="pending">pending (not yet expired)</span></td>
+    </tr>
+    
+    <tr>
+      <td>2026-08-05</td>
+      <td>CSP</td>
+      <td class="ticker">MU</td>
+      <td>#5</td>
+      <td>68.8</td>
+      <td>2026-08-28</td>
+      <td><span class="pending">pending (not yet expired)</span></td>
+    </tr>
+    
+    <tr>
+      <td>2026-08-05</td>
+      <td>LEAPS</td>
+      <td class="ticker">MAGS</td>
+      <td>#1</td>
+      <td>69.7</td>
+      <td>2028-01-21</td>
+      <td><span class="pending">pending (not yet expired)</span></td>
+    </tr>
+    
+    <tr>
+      <td>2026-08-05</td>
+      <td>Leveraged CSP</td>
+      <td class="ticker">TQQQ</td>
+      <td>#1</td>
+      <td>70.1</td>
+      <td>2026-08-14</td>
+      <td><span class="pending">pending (not yet expired)</span></td>
+    </tr>
+    
+    <tr>
+      <td>2026-08-05</td>
+      <td>Leveraged CSP</td>
+      <td class="ticker">NEBX</td>
+      <td>#2</td>
+      <td>65.9</td>
+      <td>2026-08-21</td>
+      <td><span class="pending">pending (not yet expired)</span></td>
+    </tr>
+    
+    <tr>
+      <td>2026-08-05</td>
+      <td>Spread</td>
+      <td class="ticker">NBIS</td>
+      <td>#1</td>
+      <td>85.9</td>
+      <td>2026-09-18</td>
+      <td><span class="pending">pending (not yet expired)</span></td>
+    </tr>
+    
+    <tr>
+      <td>2026-08-05</td>
+      <td>Spread</td>
+      <td class="ticker">GOOGL</td>
+      <td>#2</td>
+      <td>85.1</td>
+      <td>2026-09-18</td>
+      <td><span class="pending">pending (not yet expired)</span></td>
+    </tr>
+    
+    </tbody>
+  </table>
+</main>
+</body>
+</html>
