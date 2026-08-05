@@ -237,6 +237,11 @@ MIN_SCORE_TO_REPORT = {
 # How many ideas to keep per strategy in the internal ranked lists
 MAX_IDEAS_PER_STRATEGY = 8
 
+# Treat earnings within this many days AGO as still-live event risk (day-of
+# the report + the following session) -- catches "just reported, still
+# digesting the move" risk that a forward-only earnings check can't see.
+EARNINGS_POST_REPORT_BUFFER_DAYS = 1
+
 
 # ---------------------------------------------------------------------------
 # DAILY REPORT COMPOSITION
