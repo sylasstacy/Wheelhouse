@@ -46,6 +46,7 @@
   .pnl { font-size: 11px; color: var(--muted); }
   .pending { color: var(--muted); font-style: italic; }
   .empty { text-align: center; color: var(--muted); font-style: italic; padding: 30px; }
+  .manual-note { max-width: 1100px; margin: 0 auto 16px; font-size: 12px; color: var(--muted); font-style: italic; }
 </style>
 </head>
 <body>
@@ -62,6 +63,7 @@
         </div>
         
 </header>
+<div class="manual-note">This history shows only the official scheduled daily runs. 10 idea(s) from manual mid-session scans in this window are excluded to keep the track record clean.</div>
 <main>
   <table>
     <thead>
@@ -69,16 +71,6 @@
     </thead>
     <tbody>
       
-    <tr>
-      <td>2026-08-05</td>
-      <td>CSP</td>
-      <td class="ticker">NBIS</td>
-      <td>#1</td>
-      <td>81.8</td>
-      <td>2026-08-28</td>
-      <td><span class="pending">pending (not yet expired)</span></td>
-    </tr>
-    
     <tr>
       <td>2026-08-05</td>
       <td>CSP</td>
@@ -92,10 +84,10 @@
     <tr>
       <td>2026-08-05</td>
       <td>CSP</td>
-      <td class="ticker">BE</td>
-      <td>#2</td>
-      <td>73.0</td>
-      <td>2026-09-04</td>
+      <td class="ticker">NBIS</td>
+      <td>#1</td>
+      <td>81.8</td>
+      <td>2026-08-28</td>
       <td><span class="pending">pending (not yet expired)</span></td>
     </tr>
     
@@ -112,10 +104,10 @@
     <tr>
       <td>2026-08-05</td>
       <td>CSP</td>
-      <td class="ticker">AFRM</td>
-      <td>#3</td>
-      <td>72.6</td>
-      <td>2026-09-18</td>
+      <td class="ticker">BE</td>
+      <td>#2</td>
+      <td>73.0</td>
+      <td>2026-09-04</td>
       <td><span class="pending">pending (not yet expired)</span></td>
     </tr>
     
@@ -132,9 +124,9 @@
     <tr>
       <td>2026-08-05</td>
       <td>CSP</td>
-      <td class="ticker">HUT</td>
-      <td>#4</td>
-      <td>71.6</td>
+      <td class="ticker">AFRM</td>
+      <td>#3</td>
+      <td>72.6</td>
       <td>2026-09-18</td>
       <td><span class="pending">pending (not yet expired)</span></td>
     </tr>
@@ -152,8 +144,8 @@
     <tr>
       <td>2026-08-05</td>
       <td>CSP</td>
-      <td class="ticker">LRCX</td>
-      <td>#5</td>
+      <td class="ticker">HUT</td>
+      <td>#4</td>
       <td>71.6</td>
       <td>2026-09-18</td>
       <td><span class="pending">pending (not yet expired)</span></td>
@@ -171,11 +163,11 @@
     
     <tr>
       <td>2026-08-05</td>
-      <td>LEAPS</td>
-      <td class="ticker">MAGS</td>
-      <td>#1</td>
-      <td>70.8</td>
-      <td>2028-01-21</td>
+      <td>CSP</td>
+      <td class="ticker">LRCX</td>
+      <td>#5</td>
+      <td>71.6</td>
+      <td>2026-09-18</td>
       <td><span class="pending">pending (not yet expired)</span></td>
     </tr>
     
@@ -191,11 +183,11 @@
     
     <tr>
       <td>2026-08-05</td>
-      <td>Leveraged CSP</td>
-      <td class="ticker">SOXL</td>
+      <td>LEAPS</td>
+      <td class="ticker">MAGS</td>
       <td>#1</td>
-      <td>64.0</td>
-      <td>2026-08-21</td>
+      <td>70.8</td>
+      <td>2028-01-21</td>
       <td><span class="pending">pending (not yet expired)</span></td>
     </tr>
     
@@ -212,10 +204,10 @@
     <tr>
       <td>2026-08-05</td>
       <td>Leveraged CSP</td>
-      <td class="ticker">TQQQ</td>
-      <td>#2</td>
+      <td class="ticker">SOXL</td>
+      <td>#1</td>
       <td>64.0</td>
-      <td>2026-08-14</td>
+      <td>2026-08-21</td>
       <td><span class="pending">pending (not yet expired)</span></td>
     </tr>
     
@@ -231,11 +223,11 @@
     
     <tr>
       <td>2026-08-05</td>
-      <td>Spread</td>
-      <td class="ticker">NBIS</td>
-      <td>#1</td>
-      <td>87.9</td>
-      <td>2026-09-18</td>
+      <td>Leveraged CSP</td>
+      <td class="ticker">TQQQ</td>
+      <td>#2</td>
+      <td>64.0</td>
+      <td>2026-08-14</td>
       <td><span class="pending">pending (not yet expired)</span></td>
     </tr>
     
@@ -252,9 +244,9 @@
     <tr>
       <td>2026-08-05</td>
       <td>Spread</td>
-      <td class="ticker">XLV</td>
-      <td>#2</td>
-      <td>80.9</td>
+      <td class="ticker">NBIS</td>
+      <td>#1</td>
+      <td>87.9</td>
       <td>2026-09-18</td>
       <td><span class="pending">pending (not yet expired)</span></td>
     </tr>
@@ -265,6 +257,16 @@
       <td class="ticker">GOOGL</td>
       <td>#2</td>
       <td>85.1</td>
+      <td>2026-09-18</td>
+      <td><span class="pending">pending (not yet expired)</span></td>
+    </tr>
+    
+    <tr>
+      <td>2026-08-05</td>
+      <td>Spread</td>
+      <td class="ticker">XLV</td>
+      <td>#2</td>
+      <td>80.9</td>
       <td>2026-09-18</td>
       <td><span class="pending">pending (not yet expired)</span></td>
     </tr>
