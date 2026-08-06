@@ -35,7 +35,7 @@ UNIVERSE = {
     # Screener applies stricter liquidity & IV-crush caution here.
     "leveraged_etf": [
         "TQQQ", "SQQQ", "SOXL", "SOXS", "SPXL", "SPXS", "UPRO", "SPXU", "AAPU", "AMZU", "GGLL", "METU", "TSLL", 
-        "PTIR", "ROBN", "HIMZ", "NEBX", "RDTL", "NVDL", "CONL", "ETHU", "MSTX", "BMNU", 
+        "PTIR", "ROBN", "HIMZ", "NEBX", "RDTL", "NVDL", "CONL", "ETHU", "MSTX", "BMNU", "MUU", "AMDL",
     ],
 }
 
