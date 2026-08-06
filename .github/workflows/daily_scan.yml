@@ -5,7 +5,7 @@ name: Wheelhouse Daily Scan
 # AND can be triggered manually anytime from the "Actions" tab in GitHub.
 on:
   schedule:
-    - cron: "0 13 * * 1-5"
+    - cron: "7 13 * * 1-5"
   workflow_dispatch: {}
 
 permissions:
