@@ -54,7 +54,8 @@ def _row_html(row: dict) -> str:
 
 def generate_history(limit_days: int = 60):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    rows = storage.fetch_history(limit_days=limit_days)
+    rows = storage.fetch_history(limit_days=limit_days, run_type="scheduled")
+    manual_count = storage.count_manual_runs(limit_days=limit_days)
 
     resolved = [r for r in rows if r.get("outcome")]
     wins = [r for r in resolved if r.get("realized_pnl", 0) and r["realized_pnl"] > 0]
@@ -69,6 +70,14 @@ def generate_history(limit_days: int = 60):
           <div class="stat"><div class="stat-num">{win_rate if win_rate is not None else '—'}{'%' if win_rate is not None else ''}</div><div class="stat-label">Win Rate</div></div>
         </div>
         """
+
+    manual_note = ""
+    if manual_count:
+        manual_note = (
+            f'<div class="manual-note">This history shows only the official scheduled daily runs. '
+            f'{manual_count} idea(s) from manual mid-session scans in this window are excluded '
+            f'to keep the track record clean.</div>'
+        )
 
     table_rows = "".join(_row_html(r) for r in rows) if rows else \
         '<tr><td colspan="7" class="empty">No history yet -- check back after a few daily scans.</td></tr>'
@@ -121,6 +130,7 @@ def generate_history(limit_days: int = 60):
   .pnl {{ font-size: 11px; color: var(--muted); }}
   .pending {{ color: var(--muted); font-style: italic; }}
   .empty {{ text-align: center; color: var(--muted); font-style: italic; padding: 30px; }}
+  .manual-note {{ max-width: 1100px; margin: 0 auto 16px; font-size: 12px; color: var(--muted); font-style: italic; }}
 </style>
 </head>
 <body>
@@ -131,6 +141,7 @@ def generate_history(limit_days: int = 60):
   </div>
   {stats_html}
 </header>
+{manual_note}
 <main>
   <table>
     <thead>
