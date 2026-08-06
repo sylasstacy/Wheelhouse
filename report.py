@@ -20,6 +20,7 @@ Output: docs/index.html
 from __future__ import annotations
 import datetime as dt
 import os
+from zoneinfo import ZoneInfo
 import pandas as pd
 from pipeline import run_pipeline
 from config import (
@@ -29,6 +30,7 @@ from config import (
     REPORT_LEAPS_COUNT,
     MIN_SCORE_TO_REPORT,
     LEVERAGED_ETF_PAIRS,
+    REPORT_TIMEZONE,
 )
 from thesis import generate_thesis
 from scoring import estimate_annual_decay_pct
@@ -247,13 +249,19 @@ def generate_report():
     results = run_pipeline(verbose=True)
     core, leveraged_csps, top_spreads, top_leaps = _select_daily_ideas(results)
 
+    # GitHub Actions automatically sets GITHUB_EVENT_NAME: "schedule" for the
+    # automatic cron run, "workflow_dispatch" for a manually-triggered run
+    # (the "Run workflow" button). No workflow YAML changes needed for this.
+    github_event = os.environ.get("GITHUB_EVENT_NAME", "")
+    run_type = "scheduled" if github_event == "schedule" else "manual"
+
     logged = storage.log_daily_ideas({
         "csp": core, "leveraged_csp": leveraged_csps,
         "spread": top_spreads, "leaps": top_leaps,
-    })
-    print(f"Logged {logged} idea(s) to {storage.DB_PATH}")
+    }, run_type=run_type)
+    print(f"Logged {logged} idea(s) to {storage.DB_PATH} (run_type={run_type})")
 
-    now = dt.datetime.now().strftime("%A, %B %d %Y — %I:%M %p")
+    now = dt.datetime.now(ZoneInfo(REPORT_TIMEZONE)).strftime("%A, %B %d %Y — %I:%M %p %Z")
 
     core_count = 0 if core.empty else len(core)
     all_frames = [df for df in [core, leveraged_csps, top_spreads, top_leaps] if not df.empty]
