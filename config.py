@@ -262,6 +262,17 @@ REPORT_LEAPS_COUNT = 2           # top LEAPs shown daily (testing track)
 
 
 # ---------------------------------------------------------------------------
+# TIMEZONE
+# ---------------------------------------------------------------------------
+# GitHub Actions runners default to UTC, not your local time -- this makes
+# sure the "Generated" timestamp on the report always shows your actual
+# local time regardless of what timezone the server happens to be running
+# in. Update if you ever move: any IANA timezone name works (e.g.
+# "America/New_York", "America/Los_Angeles", "Europe/London").
+
+REPORT_TIMEZONE = "America/Chicago"
+
+# ---------------------------------------------------------------------------
 # AI THESIS GENERATION
 # ---------------------------------------------------------------------------
 # Each idea gets a short AI-written thesis via the Claude API (Haiku --
