@@ -16,9 +16,9 @@ UNIVERSE = {
         "TSLA", "ORCL", "CRM", "ADBE", "NFLX", "SPCX", "MAGS",
     ],
     "semiconductors": [
-        "AMD", "INTC", "QCOM", "TXN", "MU", "AMAT", "LRCX", "ARM", "TSM", "MRVL", "DRAM", "CBRS", "AMKR", 
+        "AMD", "INTC", "QCOM", "TXN", "MU", "AMAT", "LRCX", "TSM", "MRVL", "DRAM", "CBRS", "AMKR", 
         "AKAM", "NVTS", "BOT", "AMBA", "SYNA", "BE", "ENPH", "OKLO", "CRWV", "KEEL", "NBIS", "VIAV", "CIFR",
-        "CLSK", "HUT", "IREN", "MARA", "RIOT", "USAR",
+        "CLSK", "HUT", "IREN", "MARA", "RIOT", "USAR", "MP", "UUUU", "CCJ",
     ],
     "software_cloud": [
         "NOW", "PANW", "SNOW", "DDOG", "NET", "CRWD", "MDB", "ZS", "TEAM", "WDAY", "ZETA", "TTD", "RNG", "RDDT",
@@ -26,10 +26,10 @@ UNIVERSE = {
     ],
     "consumer_internet_fintech": [
         "SHOP", "UBER", "PYPL", "XYZ", "COIN", "DASH", "RIVN", "HOOD", "SOFI", "COIN", "AFRM", "LMND", "BMNR", 
-        "MSTR", "IBIT", "RKLB", "ASTS", "HIMS", "GRAB", "SE",
+        "MSTR", "IBIT", "RKLB", "ASTS", "HIMS", "GRAB", "SE", "OSCR", "CRCL",
     ],
     "core_etf": [
-        "SPY", "QQQ", "IWM", "DIA", "XLK", "XLF", "XLE", "XLV", "XLI", "SMH",
+        "SPY", "QQQ", "IWM", "DIA", "XLK", "XLF", "XLE", "XLV", "XLI", 
     ],
     # Sleeve for expressing leveraged views on sharp drawdowns / rebounds.
     # Screener applies stricter liquidity & IV-crush caution here.
