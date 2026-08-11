@@ -177,6 +177,23 @@ def record_outcome(idea_id: int, underlying_price_at_expiry, outcome: str,
         conn.close()
 
 
+def has_scheduled_entry_today(scan_date: str = None) -> bool:
+    """True if a genuine 'scheduled' run has already logged for this date --
+    used to let backup cron triggers detect that the primary run already
+    succeeded, so they don't create duplicate 'official' history entries."""
+    scan_date = scan_date or dt.date.today().isoformat()
+    init_db()
+    conn = get_connection()
+    try:
+        row = conn.execute(
+            "SELECT 1 FROM daily_ideas WHERE scan_date = ? AND run_type = 'scheduled' LIMIT 1",
+            (scan_date,),
+        ).fetchone()
+        return row is not None
+    finally:
+        conn.close()
+
+
 def fetch_history(limit_days: int = 60, run_type: str = "scheduled") -> list:
     """Returns recent daily_ideas joined with their outcome (if resolved yet),
     most recent scan_date first -- used to render docs/history.html.

@@ -255,6 +255,16 @@ def generate_report():
     github_event = os.environ.get("GITHUB_EVENT_NAME", "")
     run_type = "scheduled" if github_event == "schedule" else "manual"
 
+    # GitHub Actions has had real reliability problems recently -- the
+    # workflow now fires at three staggered times each morning as backups.
+    # If an earlier trigger already logged today's official "scheduled" run,
+    # a later backup trigger downgrades itself to "scheduled_backup" -- still
+    # shown on the dashboard (fresh data either way), but excluded from the
+    # official history so a delayed-then-recovered morning doesn't create
+    # duplicate entries for the same day.
+    if run_type == "scheduled" and storage.has_scheduled_entry_today():
+        run_type = "scheduled_backup"
+
     logged = storage.log_daily_ideas({
         "csp": core, "leveraged_csp": leveraged_csps,
         "spread": top_spreads, "leaps": top_leaps,
