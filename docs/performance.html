@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wheelhouse — Performance</title>
+<script>
+  (function() {
+    var stored = localStorage.getItem('wheelhouse-theme');
+    var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+  })();
+</script>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f4f5f7; --ink: #1a1d23; --muted: #6b7280; --card: #ffffff;
+    --border: #e8e9ec; --accent: #4f46e5; --row-hover: #f9fafb;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0f1115; --ink: #e5e7eb; --muted: #9ca3af; --card: #181b21;
+    --border: #2a2e37; --accent: #818cf8; --row-hover: #1c1f26;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--ink); margin: 0; padding: 32px 20px;
+  }
+  header { max-width: 1100px; margin: 0 auto 20px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; }
+  h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.02em; }
+  .subtitle { color: var(--muted); font-size: 13px; }
+  .nav-link { color: var(--accent); text-decoration: none; font-size: 13px; font-weight: 600; }
+  .stats { display: flex; gap: 24px; flex-wrap: wrap; }
+  .stat { text-align: center; }
+  .stat-num { font-size: 22px; font-weight: 700; color: var(--accent); }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  main { max-width: 1100px; margin: 0 auto; }
+  section { margin-bottom: 36px; }
+  h2 { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 2px; }
+  .section-note { color: var(--muted); font-size: 12.5px; margin: 4px 0 14px; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--border); }
+  tr:hover td { background: var(--row-hover); }
+  tr:last-child td { border-bottom: none; }
+  .bucket, .strat { font-weight: 700; }
+  .winrate { font-weight: 700; color: var(--accent); }
+  .empty { text-align: center; color: var(--muted); font-style: italic; padding: 30px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
+  .validation-cards { display: flex; gap: 16px; }
+  .validation-card { flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; text-align: center; }
+  .validation-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+  .validation-num { font-size: 32px; font-weight: 700; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🎡 Wheelhouse — Performance</h1>
+    <div class="subtitle">Resolved trade outcomes, official scheduled record only ·
+      <a class="nav-link" href="index.html">← Today's report</a> ·
+      <a class="nav-link" href="history.html">View history →</a>
+    </div>
+  </div>
+  
+        <div class="stats">
+          <div class="stat"><div class="stat-num">4</div><div class="stat-label">Resolved</div></div>
+          <div class="stat"><div class="stat-num">100.0%</div><div class="stat-label">Win Rate</div></div>
+          <div class="stat"><div class="stat-num" style="color:#15803d">$534.50</div><div class="stat-label">Total P&L</div></div>
+          <div class="stat"><div class="stat-num">+1.8%</div><div class="stat-label">Avg Return</div></div>
+        </div>
+        
+</header>
+<main>
+  
+        <section>
+          <h2>Does the Score Predict the Outcome?</h2>
+          <p class="section-note">Average composite score of winning trades vs. losing trades. If scoring is doing its job, winners should average meaningfully higher.</p>
+          <div class="validation-cards">
+            <div class="validation-card">
+              <div class="validation-label">Winners (4)</div>
+              <div class="validation-num" style="color:#15803d">64.0</div>
+            </div>
+            <div class="validation-card">
+              <div class="validation-label">Losers (0)</div>
+              <div class="validation-num" style="color:#b91c1c">—</div>
+            </div>
+          </div>
+        </section>
+        
+  <section>
+    <h2>CSP / Leveraged CSP Outcomes by Score Bucket</h2>
+    <p class="section-note">Worthless vs. assigned, grouped by the composite score the trade had when it was recommended.</p>
+    
+    <table>
+      <thead><tr><th>Score Bucket</th><th>Expired Worthless</th><th>Assigned</th><th>Total</th><th>Win Rate</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="bucket">70-79</td>
+          <td>1</td>
+          <td>0</td>
+          <td>1</td>
+          <td class="winrate">100.0%</td>
+        </tr>
+        
+        <tr>
+          <td class="bucket">60-69</td>
+          <td>3</td>
+          <td>0</td>
+          <td>3</td>
+          <td class="winrate">100.0%</td>
+        </tr>
+        </tbody>
+    </table>
+    
+  </section>
+  <section>
+    <h2>Performance by Strategy</h2>
+    <p class="section-note">Premium/credit and capital figures use different bases per strategy (cash-secured collateral for CSPs, spread width for spreads, cost basis for LEAPs) since they aren't directly comparable.</p>
+    
+    <table>
+      <thead><tr><th>Strategy</th><th>Resolved</th><th>Win Rate</th><th>Total P&L</th><th>Avg Return</th><th>Premium/Credit</th><th>Capital</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="strat">Leveraged ETF CSP</td>
+          <td>4</td>
+          <td>100.0%</td>
+          <td style="color:#15803d">$534.50</td>
+          <td>+1.8%</td>
+          <td>Premium: $534.50</td>
+          <td>Collateral: $29,050.00</td>
+        </tr>
+        </tbody>
+    </table>
+    
+  </section>
+</main>
+</body>
+</html>
