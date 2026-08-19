@@ -261,10 +261,10 @@ EARNINGS_POST_REPORT_BUFFER_DAYS = 1
 #   - leveraged ETF CSPs: their own dedicated strategy/screener entirely
 #   - spreads: shown daily rather than gated behind the exceptional bar
 
-REPORT_CSP_COUNT = 5
-REPORT_LEVERAGED_CSP_COUNT = 2   # top leveraged-ETF CSPs shown daily (testing track)
-REPORT_SPREAD_COUNT = 2          # top spreads shown daily (testing track)
-REPORT_LEAPS_COUNT = 2           # top LEAPs shown daily (testing track)
+REPORT_CSP_COUNT = 6
+REPORT_LEVERAGED_CSP_COUNT = 3   # top leveraged-ETF CSPs shown daily (testing track)
+REPORT_SPREAD_COUNT = 3          # top spreads shown daily (testing track)
+REPORT_LEAPS_COUNT = 3           # top LEAPs shown daily (testing track)
 
 
 # ---------------------------------------------------------------------------
