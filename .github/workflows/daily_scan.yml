@@ -6,8 +6,8 @@ name: Wheelhouse Daily Scan
 # (delayed or dropped scheduled runs), so if the first trigger doesn't fire
 # or fails, a later one picks up the slack. Whichever one fires FIRST on a
 # given day becomes the official "scheduled" record (see report.py); any
-# redundant later trigger downgrades itself to "scheduled_backup" so it
-# still refreshes the dashboard but doesn't create duplicate history entries.
+# redundant later trigger does nothing at all (no data pull, no dashboard
+# change) so history and the dashboard can never diverge on the same day.
 # Can also be triggered manually anytime from the "Actions" tab in GitHub.
 on:
   schedule:
@@ -48,6 +48,9 @@ jobs:
       - name: Generate history page
         run: python history.py
 
+      - name: Generate performance page
+        run: python performance.py
+
       - name: Send Slack notification (optional)
         if: env.SLACK_WEBHOOK_URL != ''
         env:
@@ -61,7 +64,7 @@ jobs:
         run: |
           git config user.name "wheelhouse-bot"
           git config user.email "actions@github.com"
-          git add docs/index.html docs/history.html wheelhouse.db
+          git add docs/index.html docs/history.html docs/performance.html wheelhouse.db
           git diff --quiet && git diff --staged --quiet || git commit -m "Daily scan: $(date -u +'%Y-%m-%d')"
           git pull --rebase origin main
           git push
