@@ -245,25 +245,35 @@ def _section(title: str, df: pd.DataFrame, empty_msg: str, note: str = None, bad
 
 
 def generate_report():
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    results = run_pipeline(verbose=True)
-    core, leveraged_csps, top_spreads, top_leaps = _select_daily_ideas(results)
-
     # GitHub Actions automatically sets GITHUB_EVENT_NAME: "schedule" for the
     # automatic cron run, "workflow_dispatch" for a manually-triggered run
     # (the "Run workflow" button). No workflow YAML changes needed for this.
     github_event = os.environ.get("GITHUB_EVENT_NAME", "")
-    run_type = "scheduled" if github_event == "schedule" else "manual"
 
     # GitHub Actions has had real reliability problems recently -- the
-    # workflow now fires at three staggered times each morning as backups.
-    # If an earlier trigger already logged today's official "scheduled" run,
-    # a later backup trigger downgrades itself to "scheduled_backup" -- still
-    # shown on the dashboard (fresh data either way), but excluded from the
-    # official history so a delayed-then-recovered morning doesn't create
-    # duplicate entries for the same day.
-    if run_type == "scheduled" and storage.has_scheduled_entry_today():
-        run_type = "scheduled_backup"
+    # workflow fires at three staggered times each morning as backups in
+    # case one trigger silently never fires. But if delays stack up, MORE
+    # THAN ONE of those triggers can end up actually executing on the same
+    # day, each pulling fresh (different, since the market may already be
+    # open by then) live data -- overwriting the dashboard with results that
+    # don't match whatever got logged as the "official" history entry.
+    #
+    # Fix: once today's official scheduled run has already succeeded, any
+    # LATER scheduled trigger does nothing at all -- no data pull, no report
+    # regeneration, dashboard left untouched -- so at most one real analysis
+    # ever runs per day and history/dashboard can never diverge. Manual runs
+    # (workflow_dispatch) are never affected by this check.
+    if github_event == "schedule" and storage.has_scheduled_entry_today():
+        print("Today's official scheduled run already completed earlier -- "
+              "skipping this redundant backup trigger entirely (no data pulled, "
+              "dashboard left as-is).")
+        return
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    results = run_pipeline(verbose=True)
+    core, leveraged_csps, top_spreads, top_leaps = _select_daily_ideas(results)
+
+    run_type = "scheduled" if github_event == "schedule" else "manual"
 
     logged = storage.log_daily_ideas({
         "csp": core, "leveraged_csp": leveraged_csps,
