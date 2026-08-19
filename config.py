@@ -75,7 +75,6 @@ LEVERAGED_ETF_MULTIPLIER = {
 # Always worth adding a new ticker explicitly above once you confirm its
 # real multiplier, rather than relying on this default.
 LEVERAGED_ETF_DEFAULT_MULTIPLIER = 2
-}
 
 # Inverse pairs -- if both sides of a pair qualify for the leveraged CSP
 # testing track on the same day, the weaker-scoring half is auto-suppressed
