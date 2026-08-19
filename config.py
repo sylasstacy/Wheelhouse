@@ -79,7 +79,13 @@ LEVERAGED_ETF_PAIRS = [
 
 SCREEN = {
     "min_option_open_interest": 100,        # per-leg OI floor
-    "max_bid_ask_spread_pct": 0.12,          # (ask-bid)/mid must be below this
+    "max_bid_ask_spread_pct": 0.25,          # sanity ceiling only -- catches broken/bad quotes;
+                                              # real liquidity differentiation happens in the
+                                              # smooth risk-score curve (CSP_LIQUIDITY_SPREAD_TARGET_PCT),
+                                              # not this hard gate. Widened from 0.12 so volatile-day
+                                              # bid-ask widening (normal market maker behavior under
+                                              # stress) doesn't reject real, tradeable candidates before
+                                              # scoring ever sees them.
     "min_underlying_avg_dollar_volume": 20_000_000,  # 20-day avg $ volume
 
     # IV filters
