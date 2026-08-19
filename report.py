@@ -211,6 +211,8 @@ def _idea_card(idea: dict, badge=None) -> str:
         f'<div class="chip">{k}: {v}</div>' for k, v in s.items() if k != "composite"
     )
     badge_html = f'<span class="badge">{badge}</span>' if badge else ""
+    price = idea.get("underlying_price")
+    price_html = f'<div class="underlying-price">Stock price at scan: ${price:.2f}</div>' if price is not None else ""
 
     return f"""
     <div class="card">
@@ -218,6 +220,7 @@ def _idea_card(idea: dict, badge=None) -> str:
         <div class="headline">{badge_html}{_headline(idea)}</div>
         <div class="score" style="background:{color}">{s['composite']}</div>
       </div>
+      {price_html}
       <div class="thesis">{thesis_text}</div>
       <div class="details">{rows_html}</div>
       <div class="chips">{subscores_html}</div>
@@ -380,7 +383,7 @@ def generate_report():
     background: var(--bg); color: var(--ink); margin: 0; padding: 32px 20px;
   }}
   header {{
-    max-width: 1100px; margin: 0 auto 20px; display: flex; justify-content: space-between;
+    max-width: 1320px; margin: 0 auto 20px; display: flex; justify-content: space-between;
     align-items: flex-end; flex-wrap: wrap; gap: 16px;
   }}
   h1 {{ font-size: 26px; margin: 0 0 4px; letter-spacing: -0.02em; }}
@@ -396,11 +399,11 @@ def generate_report():
   .stat-num {{ font-size: 22px; font-weight: 700; color: var(--accent); }}
   .stat-label {{ font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }}
   .disclaimer {{
-    max-width: 1100px; margin: 0 auto 28px; padding: 12px 16px;
+    max-width: 1320px; margin: 0 auto 28px; padding: 12px 16px;
     background: var(--disclaimer-bg); border: 1px solid var(--disclaimer-border); border-radius: 10px;
     font-size: 12.5px; color: var(--disclaimer-ink); line-height: 1.5;
   }}
-  main {{ max-width: 1100px; margin: 0 auto; }}
+  main {{ max-width: 1320px; margin: 0 auto; }}
   section {{ margin-bottom: 36px; }}
   h2 {{ font-size: 16px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 2px; }}
   .count {{ color: var(--muted); font-weight: 500; font-size: 13px; }}
@@ -422,6 +425,9 @@ def generate_report():
   .score {{
     color: white; font-weight: 700; font-size: 14px; padding: 5px 12px;
     border-radius: 20px; flex-shrink: 0;
+  }}
+  .underlying-price {{
+    font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 10px;
   }}
   .thesis {{
     font-size: 13px; line-height: 1.55; color: var(--thesis-ink); background: var(--thesis-bg);
