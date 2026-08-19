@@ -10,7 +10,7 @@ score_premium_leveraged_csp, score_risk_leveraged_csp).
 from __future__ import annotations
 import datetime as dt
 import pandas as pd
-from config import SCREEN, bucket_of, LEVERAGED_ETF_MULTIPLIER
+from config import SCREEN, bucket_of, LEVERAGED_ETF_MULTIPLIER, LEVERAGED_ETF_DEFAULT_MULTIPLIER
 from greeks import add_delta_column
 
 
@@ -22,7 +22,7 @@ def find_leveraged_csp_candidates(ticker, snapshot, hist, next_earnings, earning
     ideas = []
     min_dte = screen["leveraged_csp_min_dte"]
     max_dte = screen["leveraged_csp_max_dte"]
-    leverage_multiplier = LEVERAGED_ETF_MULTIPLIER.get(ticker, 3)
+    leverage_multiplier = LEVERAGED_ETF_MULTIPLIER.get(ticker, LEVERAGED_ETF_DEFAULT_MULTIPLIER)
 
     for expiry in snapshot.expirations:
         exp_date = dt.datetime.strptime(expiry, "%Y-%m-%d").date()
