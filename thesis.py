@@ -11,7 +11,7 @@ to a deterministic template-based thesis so the daily report never breaks.
 from __future__ import annotations
 import os
 import pandas as pd
-from config import THESIS_MODEL, THESIS_MAX_TOKENS
+from config import THESIS_MODEL, THESIS_MAX_TOKENS, LEVERAGED_ETF_DEFAULT_MULTIPLIER
 from scoring import estimate_annual_decay_pct
 
 try:
@@ -46,7 +46,7 @@ def _template_thesis(idea: dict) -> str:
         decay_pct = estimate_annual_decay_pct(idea)
         decay_note = f", est. {decay_pct:.1f}% annual decay drag" if decay_pct is not None else ""
         return (
-            f"{idea['ticker']} ({idea.get('leverage_multiplier', 3)}x leveraged) trades at "
+            f"{idea['ticker']} ({idea.get('leverage_multiplier', LEVERAGED_ETF_DEFAULT_MULTIPLIER)}x leveraged) trades at "
             f"${idea['underlying_price']}. Selling the ${idea['short_strike']} put "
             f"({idea['delta']} delta, {idea['dte']}d to expiry) collects "
             f"${idea['premium_per_contract']:.2f} in premium, a {idea['annualized_return_pct']:.1f}% "
@@ -104,7 +104,7 @@ def _build_prompt(idea: dict) -> str:
         decay_line = f" Estimated annual volatility-decay drag: {decay_pct:.1f}%." if decay_pct is not None else ""
         structure = (
             f"Structure: sell the ${idea['short_strike']} put on a "
-            f"{idea.get('leverage_multiplier', 3)}x leveraged ETF, {idea['delta']} delta, "
+            f"{idea.get('leverage_multiplier', LEVERAGED_ETF_DEFAULT_MULTIPLIER)}x leveraged ETF, {idea['delta']} delta, "
             f"collecting ${idea['premium_per_contract']:.2f} premium on "
             f"${idea['cash_secured']:.2f} cash secured "
             f"({idea['annualized_return_pct']:.1f}% annualized). Breakeven ${idea['breakeven']:.2f}."

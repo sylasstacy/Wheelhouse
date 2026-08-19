@@ -31,6 +31,7 @@ from config import (
     MIN_SCORE_TO_REPORT,
     LEVERAGED_ETF_PAIRS,
     REPORT_TIMEZONE,
+    LEVERAGED_ETF_DEFAULT_MULTIPLIER,
 )
 from thesis import generate_thesis
 from scoring import estimate_annual_decay_pct
@@ -167,7 +168,7 @@ def _detail_rows(idea: dict):
             ("Breakeven", f"${idea['breakeven']:.2f}"),
             ("IV", f"{idea['iv']}%" if idea['iv'] else "n/a"),
             ("Open Interest", idea["open_interest"]),
-            ("Leverage", f"{idea.get('leverage_multiplier', 3)}x"),
+            ("Leverage", f"{idea.get('leverage_multiplier', LEVERAGED_ETF_DEFAULT_MULTIPLIER)}x"),
         ]
         if decay_pct is not None:
             rows.append(("Est. Annual Decay", f"{decay_pct:.1f}%"))

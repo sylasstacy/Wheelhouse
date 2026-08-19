@@ -28,6 +28,7 @@ from config import (
     LEVERAGED_CSP_RISK_WEIGHTS,
     LEVERAGED_CSP_DECAY_TARGET_PCT,
     EARNINGS_POST_REPORT_BUFFER_DAYS,
+    LEVERAGED_ETF_DEFAULT_MULTIPLIER,
 )
 
 
@@ -207,7 +208,7 @@ def estimate_annual_decay_pct(idea: dict):
     realized_vol_pct = iv_diag.get("current_realized_vol_pct")
     if realized_vol_pct is None:
         return None
-    L = idea.get("leverage_multiplier", 3)
+    L = idea.get("leverage_multiplier", LEVERAGED_ETF_DEFAULT_MULTIPLIER)
     sigma = realized_vol_pct / 100.0
     decay = 0.5 * (L - 1) / L * (sigma ** 2)
     return round(decay * 100.0, 2)
