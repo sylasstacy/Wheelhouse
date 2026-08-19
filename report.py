@@ -480,6 +480,74 @@ def generate_report():
         f.write(html)
     print(f"Report written to {OUTPUT_FILE}")
 
+    _write_email_summary(core, leveraged_csps, top_spreads, top_leaps, now)
+
+
+EMAIL_SUMMARY_FILE = "email_summary.html"
+
+
+def _email_idea_line(idea: dict, badge: str = None) -> str:
+    s = idea["scores"]
+    badge_str = f"{badge} " if badge else ""
+    return f"""
+    <tr>
+      <td style="padding:8px 12px; border-bottom:1px solid #e8e9ec;">
+        <strong>{badge_str}{_headline(idea)}</strong><br>
+        <span style="color:#6b7280; font-size:13px;">Score: {s['composite']} · Stock: ${idea.get('underlying_price', 0):.2f}</span>
+      </td>
+    </tr>
+    """
+
+
+def _write_email_summary(core, leveraged_csps, top_spreads, top_leaps, now: str):
+    """
+    Writes a simple, email-client-friendly HTML summary (inline styles, no
+    CSS variables/dark mode -- most email clients don't support either) of
+    the SAME data that just went into docs/index.html. This is a transient
+    build artifact, not committed to the repo -- the workflow reads it once
+    to send the email, then it's discarded on the next checkout. Only
+    written when a real scan actually runs (this function is only called
+    from the non-skipped path in generate_report), so a redundant backup
+    trigger that skips itself never sends a duplicate email either.
+    """
+    sections = [
+        ("Today's Cash-Secured Puts", core, None),
+        ("Leveraged ETF CSPs", leveraged_csps, "⚡"),
+        ("Top Spreads", top_spreads, "📐"),
+        ("Top LEAPs", top_leaps, "📈"),
+    ]
+
+    body = ""
+    for title, df, badge in sections:
+        if df.empty:
+            continue
+        rows = "".join(_email_idea_line(row.to_dict(), badge) for _, row in df.iterrows())
+        body += f"""
+        <h3 style="margin:20px 0 6px; font-size:15px; color:#1a1d23;">{title}</h3>
+        <table style="width:100%; border-collapse:collapse;">{rows}</table>
+        """
+
+    if not body:
+        body = '<p style="color:#6b7280;">No ideas cleared the score threshold today.</p>'
+
+    html = f"""
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; max-width:600px; margin:0 auto;">
+      <h2 style="margin-bottom:2px;">🎡 Wheelhouse — Daily Scan</h2>
+      <p style="color:#6b7280; font-size:13px; margin-top:0;">Generated {now}</p>
+      {body}
+      <p style="margin-top:24px; font-size:13px;">
+        <a href="https://YOUR_GITHUB_USERNAME.github.io/YOUR_REPO_NAME/" style="color:#4f46e5;">View full report with theses →</a>
+      </p>
+      <p style="color:#9ca3af; font-size:11px; margin-top:20px;">
+        Informational only, not investment advice. Verify against your broker before trading.
+      </p>
+    </div>
+    """
+
+    with open(EMAIL_SUMMARY_FILE, "w") as f:
+        f.write(html)
+    print(f"Email summary written to {EMAIL_SUMMARY_FILE}")
+
 
 if __name__ == "__main__":
     generate_report()
