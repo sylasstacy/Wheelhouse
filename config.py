@@ -58,8 +58,23 @@ def bucket_of(ticker: str) -> str:
 # estimate). Defaults to 3 for anything not listed -- update this if you add
 # 2x products (e.g. SSO/SDS) or anything else with a different multiplier.
 LEVERAGED_ETF_MULTIPLIER = {
+    # Broad-market/sector leveraged ETFs -- 3x (the older-generation products)
     "TQQQ": 3, "SQQQ": 3, "SOXL": 3, "SOXS": 3,
     "SPXL": 3, "SPXS": 3, "UPRO": 3, "SPXU": 3,
+    # Single-stock leveraged ETFs -- 2x, verified against issuer filings/pages.
+    # The newer wave of single-stock products (GraniteShares, Direxion
+    # single-stock, T-Rex, Defiance) has overwhelmingly standardized on 2x,
+    # unlike the older 3x broad-index products above.
+    "NVDL": 2, "CONL": 2, "MSTX": 2, "TSLL": 2,
+    "AAPU": 2, "AMZU": 2, "GGLL": 2, "METU": 2,
+    "ETHU": 2, "ROBN": 2, "HIMZ": 2, "RDTL": 2,
+    "PTIR": 2, "BMNU": 2, "NEBX": 2, "MUU": 2, "AMDL": 2,
+}
+# Fallback for any ticker not explicitly listed above -- 2x rather than 3x,
+# since that's now the more common case for newer single-stock products.
+# Always worth adding a new ticker explicitly above once you confirm its
+# real multiplier, rather than relying on this default.
+LEVERAGED_ETF_DEFAULT_MULTIPLIER = 2
 }
 
 # Inverse pairs -- if both sides of a pair qualify for the leveraged CSP
