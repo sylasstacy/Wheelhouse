@@ -7,6 +7,7 @@ Output: docs/history.html
 """
 
 from __future__ import annotations
+import json
 import os
 import storage
 
@@ -24,6 +25,25 @@ OUTCOME_COLORS = {
     "assigned_itm": "#b45309", "partial_loss": "#b45309",
     "max_loss_itm": "#b91c1c", "otm_worthless": "#b91c1c",
 }
+
+
+def _strike_display(row: dict) -> str:
+    """Strike price(s), formatted per strategy -- fields differ by idea type."""
+    try:
+        idea = json.loads(row["idea_json"]) if row.get("idea_json") else {}
+    except Exception:
+        return "—"
+    strategy = row.get("strategy")
+    if strategy in ("csp", "leveraged_csp"):
+        sk = idea.get("short_strike")
+        return f"${sk}" if sk is not None else "—"
+    if strategy == "spread":
+        s, l = idea.get("short_strike"), idea.get("long_strike")
+        return f"${s}/{l}" if s is not None and l is not None else "—"
+    if strategy == "leaps":
+        sk = idea.get("strike")
+        return f"${sk}" if sk is not None else "—"
+    return "—"
 
 
 def _row_html(row: dict) -> str:
@@ -44,6 +64,7 @@ def _row_html(row: dict) -> str:
       <td>{row['scan_date']}</td>
       <td>{STRATEGY_LABELS.get(row['strategy'], row['strategy'])}</td>
       <td class="ticker">{row['ticker']}</td>
+      <td>{_strike_display(row)}</td>
       <td>#{row['rank_in_section']}</td>
       <td>{row['composite_score']}</td>
       <td>{row['expiry'] or '—'}</td>
@@ -80,7 +101,7 @@ def generate_history(limit_days: int = 60):
         )
 
     table_rows = "".join(_row_html(r) for r in rows) if rows else \
-        '<tr><td colspan="7" class="empty">No history yet -- check back after a few daily scans.</td></tr>'
+        '<tr><td colspan="8" class="empty">No history yet -- check back after a few daily scans.</td></tr>'
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -137,7 +158,10 @@ def generate_history(limit_days: int = 60):
 <header>
   <div>
     <h1>🎡 Wheelhouse — History</h1>
-    <div class="subtitle">Every idea shown in the last {limit_days} days · <a class="nav-link" href="index.html">← Back to today's report</a></div>
+    <div class="subtitle">Every idea shown in the last {limit_days} days ·
+      <a class="nav-link" href="index.html">← Back to today's report</a> ·
+      <a class="nav-link" href="performance.html">View performance →</a>
+    </div>
   </div>
   {stats_html}
 </header>
@@ -145,7 +169,7 @@ def generate_history(limit_days: int = 60):
 <main>
   <table>
     <thead>
-      <tr><th>Date</th><th>Strategy</th><th>Ticker</th><th>Rank</th><th>Score</th><th>Expiry</th><th>Outcome</th></tr>
+      <tr><th>Date</th><th>Strategy</th><th>Ticker</th><th>Strike</th><th>Rank</th><th>Score</th><th>Expiry</th><th>Outcome</th></tr>
     </thead>
     <tbody>
       {table_rows}

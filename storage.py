@@ -70,14 +70,10 @@ def get_connection() -> sqlite3.Connection:
 def init_db() -> None:
     conn = get_connection()
     try:
-        # 1. Create tables first (no-op if they already exist)
         conn.executescript(TABLES_SCHEMA)
-        # 2. Migrate older databases that predate the run_type column --
-        #    must happen BEFORE creating an index on that column
         existing_cols = {row[1] for row in conn.execute("PRAGMA table_info(daily_ideas)")}
         if "run_type" not in existing_cols:
             conn.execute("ALTER TABLE daily_ideas ADD COLUMN run_type TEXT NOT NULL DEFAULT 'scheduled'")
-        # 3. Now safe to create indexes, including the one on run_type
         conn.executescript(INDEXES_SCHEMA)
         conn.commit()
     finally:
@@ -215,6 +211,38 @@ def fetch_history(limit_days: int = 60, run_type: str = "scheduled") -> list:
             query += " AND d.run_type = ?"
             params.append(run_type)
         query += " ORDER BY d.scan_date DESC, d.strategy, d.rank_in_section"
+        rows = conn.execute(query, params).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def fetch_resolved(run_type: str = "scheduled", limit_days: int = None) -> list:
+    """All resolved (outcome present) ideas -- used to build docs/performance.html.
+    run_type='scheduled' (default) keeps the performance stats to the official
+    record only, same reasoning as fetch_history. Pass limit_days to restrict
+    to a recent window; None (default) returns everything ever resolved."""
+    init_db()
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    try:
+        query = """
+            SELECT d.*, o.outcome, o.realized_pnl, o.pct_return_on_capital,
+                   o.underlying_price_at_expiry, o.resolved_date
+            FROM daily_ideas d
+            JOIN outcomes o ON o.idea_id = d.id
+        """
+        conditions = []
+        params = []
+        if run_type is not None:
+            conditions.append("d.run_type = ?")
+            params.append(run_type)
+        if limit_days is not None:
+            conditions.append("d.scan_date >= date('now', ?)")
+            params.append(f"-{limit_days} days")
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+        query += " ORDER BY d.scan_date DESC"
         rows = conn.execute(query, params).fetchall()
         return [dict(r) for r in rows]
     finally:
