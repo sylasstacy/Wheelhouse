@@ -115,12 +115,18 @@ def swing_avwaps(hist: pd.DataFrame, lookback: int = 252) -> dict:
 def trend_score(hist: pd.DataFrame) -> dict:
     """
     Returns a 0-100 base trend score plus diagnostics (MAs, RSI, support
-    cushion, Bollinger Bands, anchored VWAP swings). The base score covers
-    moving-average position/stacking, support cushion, and AVWAP position --
-    RSI and Bollinger %B are interpreted differently depending on strategy
-    (e.g. oversold RSI is a caution for LEAPs but an opportunity for CSP
-    premium selling), so those are applied on top of this base score in
-    scoring.py, not baked in here.
+    cushion, Bollinger Bands, anchored VWAP swings).
+
+    The base score covers only the LONGER-HORIZON structural signals shared
+    across all strategies: price vs. 200-day MA, MA stacking, support
+    cushion, and AVWAP position -- these genuinely differentiate a healthy
+    setup from a real trend break, regardless of strategy.
+
+    Price vs. 20-day/50-day MA, RSI, and Bollinger %B are all interpreted
+    differently depending on strategy (e.g. a short-term dip below the 20/50
+    day MA is often the OPPORTUNITY for CSP premium selling, not a caution,
+    the same way oversold RSI already is) -- so those are applied on top of
+    this base score in scoring.py, not baked in here.
     """
     close = hist["close"]
     last_close = float(close.iloc[-1])
@@ -131,15 +137,13 @@ def trend_score(hist: pd.DataFrame) -> dict:
 
     score = 50.0  # neutral baseline
 
-    # Price above/below key MAs
-    if not np.isnan(mas["sma20"]):
-        score += 8 if last_close > mas["sma20"] else -8
-    if not np.isnan(mas["sma50"]):
-        score += 10 if last_close > mas["sma50"] else -10
+    # Price vs 200-day MA: the genuine structural signal -- a stock below its
+    # 200-day carries real, longer-horizon trend-break risk regardless of
+    # strategy, unlike a short-term dip below the 20/50-day.
     if not np.isnan(mas["sma200"]):
         score += 12 if last_close > mas["sma200"] else -12
 
-    # MA stacking (bullish alignment: 20 > 50 > 200)
+    # MA stacking (bullish alignment: 20 > 50 > 200) -- also a structural signal
     if not np.isnan(mas["sma200"]) and mas["sma20"] > mas["sma50"] > mas["sma200"]:
         score += 10
     elif not np.isnan(mas["sma200"]) and mas["sma20"] < mas["sma50"] < mas["sma200"]:

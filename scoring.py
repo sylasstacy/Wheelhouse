@@ -37,6 +37,35 @@ def _clip100(x):
 
 def score_technicals(trend_diag: dict, strategy: str) -> float:
     base = trend_diag["trend_score"]
+
+    # Price vs 20-day/50-day MA -- short-term signals, interpretation depends
+    # on strategy. For CSPs/leveraged CSPs (premium selling), a brief dip
+    # below a short-term MA is often the SETUP (richer premium, mean-reversion
+    # odds favor the seller) rather than a real risk -- the genuine structural
+    # risk is already captured separately by the 200-day MA and stacking
+    # checks in the base score, which stay unchanged. So the downside penalty
+    # here is intentionally much smaller than the upside reward for CSPs,
+    # while LEAPs/spreads keep the original symmetric treatment (a long-dated
+    # directional bet or a fresh spread genuinely wants confirmed strength,
+    # not a stock currently testing its short-term averages). Applied BEFORE
+    # the spread inversion below, same as the 200-day MA already is, so a
+    # bearish spread treats every moving-average signal consistently rather
+    # than contradicting itself between the 20/50-day and 200-day reads.
+    last_close = trend_diag.get("last_close")
+    sma20 = trend_diag.get("sma20")
+    sma50 = trend_diag.get("sma50")
+    if last_close is not None:
+        if strategy in ("csp", "leveraged_csp"):
+            if sma20 is not None:
+                base += 8 if last_close > sma20 else -2
+            if sma50 is not None:
+                base += 10 if last_close > sma50 else -3
+        else:
+            if sma20 is not None:
+                base += 8 if last_close > sma20 else -8
+            if sma50 is not None:
+                base += 10 if last_close > sma50 else -10
+
     if strategy == "spread" and base < 50:
         # bearish spread: invert so a strong downtrend also scores well
         base = 100 - base
