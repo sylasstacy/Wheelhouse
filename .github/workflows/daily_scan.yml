@@ -7,8 +7,8 @@ name: Wheelhouse Daily Scan
 # or fails, a later one picks up the slack. Whichever one fires FIRST on a
 # given day becomes the official "scheduled" record (see report.py); any
 # redundant later trigger does nothing at all (no data pull, no dashboard
-# change) so history and the dashboard can never diverge on the same day.
-# Can also be triggered manually anytime from the "Actions" tab in GitHub.
+# change, no duplicate email) so history and the dashboard can never diverge
+# on the same day. Can also be triggered manually anytime from the "Actions" tab.
 on:
   schedule:
     - cron: "7 12 * * 1-5"
@@ -50,6 +50,25 @@ jobs:
 
       - name: Generate performance page
         run: python performance.py
+
+      - name: Check for email summary
+        id: check_email
+        run: echo "exists=$( [ -f email_summary.html ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
+
+      - name: Send email with scan results (optional)
+        if: steps.check_email.outputs.exists == 'true' && env.EMAIL_USERNAME != ''
+        uses: dawidd6/action-send-mail@v3
+        env:
+          EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "🎡 Wheelhouse Daily Scan Results"
+          to: ${{ secrets.EMAIL_TO }}
+          from: Wheelhouse Bot
+          html_body: file://email_summary.html
 
       - name: Send Slack notification (optional)
         if: env.SLACK_WEBHOOK_URL != ''
